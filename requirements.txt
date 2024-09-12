@@ -1,0 +1,24 @@
+tqdm
+
+pandas
+numpy
+matplotlib
+scikit-learn
+jupyter
+
+### development
+black
+isort
+bandit
+mypy
+pylint
+
+### add specific project dependencies here:
+pillow
+tensorboard
+seaborn
+torch
+torchvision
+torchaudio
+spacy
+marimo
