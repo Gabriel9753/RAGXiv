@@ -1,8 +1,5 @@
 tqdm
-
-pandas
 numpy
-matplotlib
 scikit-learn
 jupyter
 
@@ -13,12 +10,9 @@ bandit
 mypy
 pylint
 
-### add specific project dependencies here:
+### DATA PROCESSING ###
 pillow
-tensorboard
 seaborn
-torch
-torchvision
-torchaudio
-spacy
-marimo
+matplotlib
+pandas
+pyfonts

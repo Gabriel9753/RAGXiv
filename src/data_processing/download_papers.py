@@ -8,8 +8,6 @@ from tqdm import tqdm
 
 cfg = Config()
 
-os.makedirs(paper_dir, exist_ok=True)
-
 
 def download_paper(row, url_template, paper_dir):
     id = row["id"]
@@ -43,8 +41,7 @@ def main():
 
         # Use tqdm to show progress
         for future in tqdm(as_completed(futures), total=len(futures), desc="Downloading papers"):
-            id = future.result()
-            # You can add additional processing here if needed
+            pass
 
 
 if __name__ == "__main__":

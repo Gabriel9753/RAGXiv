@@ -76,7 +76,7 @@ def main():
 
     os.makedirs(cfg.eda_dir, exist_ok=True)
 
-    # Create count plots for different columns
+    # count plots for different columns
     custom_countplot(paper_df, "author_count", cfg, title="Distribution of authors per paper", top_n=15)
     custom_countplot(paper_df, "reference_count", cfg, top_n=15)
     custom_countplot(paper_df, "citation_count", cfg, top_n=15)

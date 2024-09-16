@@ -1,6 +1,7 @@
 class Config:
     """Configuation."""
 
+    data_dir = r"data"  # path to data dir
     datapath = r"data\sample_2024.csv"  # path to arxiv paper csv
     paper_dir = r"data\papers"  # path to dir where the papers will be downloaded in
     paper_metadata_path = r"data\papers_metadata.json"  # path to json with additional semantic scholar metadata

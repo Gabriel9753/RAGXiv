@@ -3,13 +3,17 @@ import os
 
 import pandas as pd
 import requests
+from configs import Config
 from tqdm import tqdm
 
-current_dir = os.path.dirname(os.path.realpath(__file__))
-data_dir = os.path.join(current_dir, "..", "..", "data")
+cfg = Config()
+
+data_dir = cfg.data_dir
+paper_metadata_path = cfg.paper_metadata_path
+
 request_fields = "externalIds,referenceCount,citationCount,title,url,year,authors,fieldsOfStudy,s2FieldsOfStudy,publicationTypes,publicationDate,journal,references"
 semantic_url = "https://api.semanticscholar.org/graph/v1/paper/batch"
-batch_size = 100
+batch_size = 50
 
 
 def choose_df():
@@ -38,8 +42,7 @@ def request_papers(ids):
 
 
 def save_papers_data(papers_data):
-    out_path = os.path.join(data_dir, "papers_metadata.json")
-    with open(out_path, "w") as f:
+    with open(paper_metadata_path, "w") as f:
         json.dump(papers_data, f, indent=4)
 
 
@@ -51,12 +54,6 @@ def process_df(df):
         ids = [f"ARXIV:{id}" for id in ids]
         results = request_papers(ids)
         papers_data.extend(results)
-        break
-
-    # build a pandas dataframe from the data (every papermetadata is a returned json)
-    papers_data = pd.DataFrame(papers_data)
-    df_path = os.path.join(data_dir, "papers_metadata.csv")
-    papers_data.to_csv(df_path, index=False)
 
     return papers_data
 
