@@ -65,7 +65,7 @@
     "markdown.preview.fontFamily": "Geist Mono",
     "editor.inlayHints.fontFamily": "Geist Mono",
     // Theme
-    "workbench.colorTheme": "Catppuccin Latte",
+    "workbench.colorTheme": "Dracula Refined",
     "workbench.iconTheme": "catppuccin-mocha",
     // Font size
     "editor.fontSize": 14,
