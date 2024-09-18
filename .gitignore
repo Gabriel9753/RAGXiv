@@ -146,3 +146,4 @@ cache_dir
 data/arxiv-metadata-oai-snapshot.json
 data/arxiv_metadata.parquet.gzip
 data/sample_2024.csv
+data/papers_metadata.json
