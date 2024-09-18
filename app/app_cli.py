@@ -8,6 +8,7 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_openai import ChatOpenAI
 from langchain_huggingface import HuggingFaceEmbeddings
+
 import config
 
 
@@ -140,12 +141,12 @@ def chat(rag, input_message):
 
 
     return output_message
+
+
 if __name__ == "__main__":
     # Initialize components
     llm, history_retriever, chain = initialize().values()
 
-    # Initialize session store for chat histories
-    session_store = {}
     memory = Memory()
     runnable = build_runnable(chain, memory)
 
