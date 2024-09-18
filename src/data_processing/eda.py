@@ -1,12 +1,15 @@
 import os
+import sys
 
 import matplotlib.font_manager as fm
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
-from configs import EDAConfig
 from data_utils import load_data
 from pyfonts import load_font
+
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+from config import EDAConfig
 
 
 def setup_font(cfg):

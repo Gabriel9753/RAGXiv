@@ -1,8 +1,12 @@
 import json
+import os
+import sys
 from collections import defaultdict
 
 import pandas as pd
-from configs import Config
+
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+from config import Config
 
 cfg = Config()
 
@@ -13,6 +17,7 @@ def load_data(drop_missing=False):
         papers_data = json.load(f)
 
     papers_df["arxiv_id"] = papers_df["id"].astype(str)
+    papers_df["pdf_path"] = papers_df["arxiv_id"].apply(lambda x: os.path.join(cfg.paper_dir, f"{x}.pdf"))
 
     additional_data = defaultdict(list)
     paper_authors = dict()

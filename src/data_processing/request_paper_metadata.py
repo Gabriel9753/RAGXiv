@@ -1,10 +1,13 @@
 import json
 import os
+import sys
 
 import pandas as pd
 import requests
-from configs import Config
 from tqdm import tqdm
+
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+from config import Config
 
 cfg = Config()
 

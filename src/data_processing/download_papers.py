@@ -1,13 +1,16 @@
 import os
+import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import pandas as pd
 import requests
-from configs import Config
 from PyPDF2 import PdfReader
 from requests.exceptions import HTTPError, RequestException
 from retry import retry
 from tqdm import tqdm
+
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+from config import Config
 
 cfg = Config()
 
