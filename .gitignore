@@ -1,6 +1,7 @@
 # project specific
 papers/
 chroma/
+qdrant/
 
 
 # Byte-compiled / optimized / DLL files

@@ -1,12 +1,12 @@
 class Config:
     """Configuation."""
 
-    data_dir = r"data"  # path to data dir
-    datapath = r"data\sample_2024.csv"  # path to arxiv paper csv
-    paper_dir = r"data\papers"  # path to dir where the papers will be downloaded in
-    paper_metadata_path = r"data\papers_metadata.json"  # path to json with additional semantic scholar metadata
+    data_dir = r"D:\Database\arxiv"  # path to data dir
+    datapath = rf"{data_dir}\sample_2024.csv"  # path to arxiv paper csv
+    paper_dir = rf"{data_dir}\papers"  # path to dir where the papers will be downloaded in
+    paper_metadata_path = rf"{data_dir}\papers_metadata.json"  # path to json with additional semantic scholar metadata
     multi_thread_workers = 8
-    device = "cuda"  # device to use for embeddings
+    device = "cpu"  # device to use for embeddings
 
 
 class EDAConfig(Config):
@@ -41,7 +41,7 @@ class IndexConfig(Config):
         super().__init__()
 
         # Existing configurations
-        self.chroma_path = r"chroma"
+        self.vectorstore_path = r"qdrant/"
         self.embedding_model_name = "sentence-transformers/allenai-specter"
         self.text_splitter_args = {
             "chunk_size": 512,
@@ -50,3 +50,4 @@ class IndexConfig(Config):
             "add_start_index": True,
         }
         self.drop_missing = True  # drop papers without metadata from semantic scholar
+        self.limit = None

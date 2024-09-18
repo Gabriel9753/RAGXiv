@@ -13,6 +13,9 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain_huggingface import HuggingFaceEmbeddings
 from tqdm import tqdm
 import pandas as pd
+from langchain_qdrant import QdrantVectorStore
+from qdrant_client import QdrantClient
+from qdrant_client.http.models import Distance, VectorParams
 
 # add the src directory to the path
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
@@ -22,12 +25,14 @@ from data_processing.data_utils import load_data
 
 
 def index(cfg, papers_df, paper_authors, paper_references):
-    chroma_path = cfg.chroma_path
+    vectorstore_path = cfg.vectorstore_path
     embedding_model_name = cfg.embedding_model_name
     text_splitter_args = cfg.text_splitter_args
     device = cfg.device
 
     pdfs = papers_df["pdf_path"].tolist()
+    if cfg.limit:
+        pdfs = pdfs[:cfg.limit]
 
     embeddings = HuggingFaceEmbeddings(model_name=embedding_model_name, model_kwargs={"device": device})
 
@@ -59,10 +64,25 @@ def index(cfg, papers_df, paper_authors, paper_references):
         # TODO: Add metadata to another db for later use so not every chunk has the data...
 
     # 5. Save to vectorstore
-    if os.path.exists(chroma_path):
-        shutil.rmtree(chroma_path)
-    db = Chroma.from_documents(chunks, embeddings, persist_directory=chroma_path)
-    print(f"Indexed {len(chunks)} chunks to {chroma_path}")
+    if os.path.exists(vectorstore_path):
+        shutil.rmtree(vectorstore_path)
+
+    client = QdrantClient(path=vectorstore_path)
+    if client.collection_exists("arxiv_demo"):
+        client.delete_collection("arxiv_demo")
+
+    client.create_collection(
+            collection_name="arxiv_demo",
+            vectors_config=VectorParams(size=768, distance=Distance.COSINE),
+        )
+
+    vectorstore = QdrantVectorStore(
+        client=client,
+        collection_name="arxiv_demo",
+        embedding=embeddings,
+    ).from_documents(chunks, embedding=embeddings)
+
+    print(f"Indexed {len(chunks)} chunks to {vectorstore_path}")
 
 
 def main():

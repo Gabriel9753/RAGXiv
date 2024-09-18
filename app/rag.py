@@ -10,6 +10,9 @@ from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_openai import ChatOpenAI
 from langchain_ollama.llms import OllamaLLM
+from langchain_qdrant import QdrantVectorStore
+from qdrant_client import QdrantClient
+from qdrant_client.http.models import Distance, VectorParams
 import yaml
 import uuid
 
@@ -24,7 +27,11 @@ def retriever():
     embedding_function = HuggingFaceEmbeddings(model_name=config.EMBEDDING_MODEL_NAME, model_kwargs={"device": "cpu"})
 
     # Initialize the vectorstore using Chroma for persistence
-    vectorstore = Chroma(persist_directory=config.CHROMADIR, embedding_function=embedding_function)
+    vectorstore = QdrantVectorStore.from_existing_collection(
+        path=config.CHROMADIR,
+        collection_name="arxiv_demo",
+        embedding=embedding_function,
+    )
 
     return vectorstore.as_retriever()
 
@@ -53,11 +60,12 @@ contextualize_system_prompt = (
     "answer concise. "
     "If the question requires specific information/numbers/metrics from the paper, "
     "then use that information to answer the question and cite the source. "
-    "\n\n"
-    "{context}"
-    "\n\n"
     "If you can't find the answer, use your own knowledge to "
     "provide a good answer."
+    "\n\n"
+    "Context: {context}"
+
+
 )
 
 qa_prompt = ChatPromptTemplate.from_messages(
@@ -70,7 +78,7 @@ qa_prompt = ChatPromptTemplate.from_messages(
 
 
 def initialize():
-    if config.LLM_TYPE == "llm-studio":
+    if config.LLM_TYPE == "lm-studio":
         llm = ChatOpenAI(openai_api_base="http://localhost:5000/v1", openai_api_key="lm-studio")
     elif config.LLM_TYPE == "ollama":
         llm = OllamaLLM(model="llama3.1:8b", temperature=0.3)
@@ -133,27 +141,27 @@ def chat(rag, input_message):
 
 if __name__ == "__main__":
     # Initialize components
-    llm, history_retriever, chain = initialize().values()
+    # llm, history_retriever, chain = initialize().values()
     yaml_path = "app/questions.yaml"
 
-    with open(yaml_path, "r") as f:
+    with open(yaml_path, "r", encoding="utf-8") as f:
         questions = yaml.load(f, Loader=yaml.FullLoader)["questions"]
 
-    for i, question in enumerate(questions, 1):
-        print(f"##################\n### Question {i} ###\n##################")
-        memory = Memory()
-        runnable = build_runnable(chain, memory)
-        q = question["question"]
-        a = question["answer"]
-        pdf = question["paper"]
+    # for i, question in enumerate(questions, 1):
+    #     print(f"##################\n### Question {i} ###\n##################")
+    #     memory = Memory()
+    #     runnable = build_runnable(chain, memory)
+    #     q = question["question"]
+    #     a = question["answer"]
+    #     pdf = question["paper"]
 
-        # Chat with the model
-        output = chat(runnable, q)["answer"]
-        print(
-            f'~~~ Question ~~~\n{q}\n\n~~~ Output ~~~\n{output}\n\n~~~ "Correct" Answer ~~~\n{a}\n\n~~~ Paper ~~~\n{pdf}\n'
-        )
+    #     # Chat with the model
+    #     output = chat(runnable, q)["answer"]
+    #     print(
+    #         f'~~~ Question ~~~\n{q}\n\n~~~ Output ~~~\n{output}\n\n~~~ "Correct" Answer ~~~\n{a}\n\n~~~ Paper ~~~\n{pdf}\n'
+    #     )
 
     # Retrieval of inputs
     retr = retriever()
-    # print(retr.vectorstore.similarity_search(input1))
-    # print(retr.invoke(input1))
+    print(retr.vectorstore.similarity_search(questions[0]["question"]))
+    print(retr.invoke(questions[0]["question"]))
