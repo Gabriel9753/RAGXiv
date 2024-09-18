@@ -1,7 +1,27 @@
+### GENERAL ###
+tqdm
+numpy
+scikit-learn
+jupyter
+
+### DEVELOPMENT ###
+black
+isort
+bandit
+mypy
+pylint
+
+### DATA PROCESSING ###
+pillow
+seaborn
+matplotlib
+pandas
+pyfonts
+
+### RAG ###
 langchain_core
 langchain_openai
 langchain_huggingface
 langchain_chroma
-
 streamlit
 chainlit
