@@ -17,11 +17,15 @@ seaborn
 matplotlib
 pandas
 pyfonts
+retry
 
 ### RAG ###
+langchain_community
 langchain_core
 langchain_openai
 langchain_huggingface
 langchain_chroma
 streamlit
 chainlit
+pypdf
+pypdf2
