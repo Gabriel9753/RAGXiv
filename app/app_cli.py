@@ -11,6 +11,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_openai import ChatOpenAI
 from langchain_ollama.llms import OllamaLLM
 import yaml
+import uuid
 
 
 def retriever():
@@ -35,6 +36,7 @@ contextualize_system_prompt = (
     "without the chat history. Do NOT answer the question, "
     "just reformulate it if needed and otherwise return it as is."
 )
+
 contextualize_prompt = ChatPromptTemplate.from_messages(
     [
         ("system", contextualize_system_prompt),
@@ -68,8 +70,12 @@ qa_prompt = ChatPromptTemplate.from_messages(
 
 
 def initialize():
-    # llm = ChatOpenAI(openai_api_base="http://localhost:5000/v1", openai_api_key="lm-studio")
-    llm = OllamaLLM(model="llama3.1:8b", temperature=0.3)
+    if config.LLM_TYPE == "llm-studio":
+        llm = ChatOpenAI(openai_api_base="http://localhost:5000/v1", openai_api_key="lm-studio")
+    elif config.LLM_TYPE == "ollama":
+        llm = OllamaLLM(model="llama3.1:8b", temperature=0.3)
+    else:
+        raise ValueError(f"Invalid LLM_TYPE: {config.LLM_TYPE}")
 
     history_aware_retriever = create_history_aware_retriever(llm, retriever(), contextualize_prompt)
 
@@ -114,9 +120,6 @@ def build_runnable(rag_chain, memory, keys: dict = None):
         history_messages_key=keys["history_messages_key"],
         output_messages_key=keys["output_messages_key"],
     )
-
-
-import uuid
 
 
 def chat(rag, input_message):
