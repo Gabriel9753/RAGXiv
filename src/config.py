@@ -44,8 +44,8 @@ class IndexConfig(Config):
         self.vectorstore_path = r"qdrant/"
         self.embedding_model_name = "sentence-transformers/allenai-specter"
         self.text_splitter_args = {
-            "chunk_size": 512,
-            "chunk_overlap": 128,
+            "chunk_size": 700,
+            "chunk_overlap": 32,
             "length_function": len,
             "add_start_index": True,
         }

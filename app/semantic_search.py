@@ -1,9 +1,15 @@
 # Import necessary libraries
+import os
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_qdrant import QdrantVectorStore
 import yaml
-
+from dotenv import load_dotenv
 import config
+
+load_dotenv()
+
+url = "https://1ed4f85b-722b-4080-97a7-afe8eab7ae7a.europe-west3-0.gcp.cloud.qdrant.io:6333"
+QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
 
 
 def retriever():
@@ -17,9 +23,11 @@ def retriever():
 
     # Initialize the vectorstore using Chroma for persistence
     vectorstore = QdrantVectorStore.from_existing_collection(
-        path=config.CHROMADIR,
+        # path=config.CHROMADIR,
         collection_name="arxiv_demo",
         embedding=embedding_function,
+        url=url,
+        api_key=QDRANT_API_KEY,
     )
 
     return vectorstore.as_retriever()

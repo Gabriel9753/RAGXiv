@@ -5,7 +5,7 @@ Initialize Chroma vectorstore.
 import os
 import shutil
 import sys
-
+from concurrent.futures import ThreadPoolExecutor, as_completed, ProcessPoolExecutor
 from langchain.schema import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
@@ -16,12 +16,23 @@ import pandas as pd
 from langchain_qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import Distance, VectorParams
+from dotenv import load_dotenv
 
 # add the src directory to the path
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from config import IndexConfig
 from data_processing.data_utils import load_data
+
+
+load_dotenv()
+
+QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
+
+
+def load_pdf(file):
+    loader = PyPDFLoader(file)
+    return loader.load()[0]
 
 
 def index(cfg, papers_df, paper_authors, paper_references):
@@ -32,20 +43,26 @@ def index(cfg, papers_df, paper_authors, paper_references):
 
     pdfs = papers_df["pdf_path"].tolist()
     if cfg.limit:
-        pdfs = pdfs[:cfg.limit]
+        pdfs = pdfs[: cfg.limit]
 
     embeddings = HuggingFaceEmbeddings(model_name=embedding_model_name, model_kwargs={"device": device})
 
     print(f"Indexing {len(pdfs)} PDFs.")
 
-    # 2. Extract data
+    # 2. Extract data using multithreading
     documents = []
     with tqdm(total=len(pdfs), desc="Extracting text from PDFs") as pbar:
-        for file in pdfs:
-            loader = PyPDFLoader(file)
-            doc = loader.load()[0]
-            documents.append(doc)
-            pbar.update(1)
+        with ProcessPoolExecutor(max_workers=6) as executor:
+            futures = {executor.submit(load_pdf, file): file for file in pdfs}
+            for future in as_completed(futures):
+                try:
+                    doc = future.result()
+                    documents.append(doc)
+                except Exception as e:
+                    print(f"Error loading {futures[future]}: {e}")
+                finally:
+                    pbar.update(1)
+
     text_splitter = RecursiveCharacterTextSplitter(**text_splitter_args)
     chunks = text_splitter.split_documents(documents)
     print(f"Split {len(chunks)} documents into chunks.")
@@ -67,20 +84,29 @@ def index(cfg, papers_df, paper_authors, paper_references):
     if os.path.exists(vectorstore_path):
         shutil.rmtree(vectorstore_path)
 
-    client = QdrantClient(path=vectorstore_path)
+    # client = QdrantClient(path=vectorstore_path)
+    url = "https://1ed4f85b-722b-4080-97a7-afe8eab7ae7a.europe-west3-0.gcp.cloud.qdrant.io:6333"
+    client = QdrantClient(
+        url=url,
+        api_key=QDRANT_API_KEY,
+    )
     if client.collection_exists("arxiv_demo"):
         client.delete_collection("arxiv_demo")
 
     client.create_collection(
-            collection_name="arxiv_demo",
-            vectors_config=VectorParams(size=768, distance=Distance.COSINE),
-        )
+        collection_name="arxiv_demo",
+        vectors_config=VectorParams(size=768, distance=Distance.COSINE),
+    )
 
     vectorstore = QdrantVectorStore(
         client=client,
-        collection_name="arxiv_demo",
         embedding=embeddings,
-    ).from_documents(chunks, embedding=embeddings)
+        collection_name="arxiv_demo",
+    )
+
+    vectorstore.from_documents(
+        chunks, embedding=embeddings, url=url, api_key=QDRANT_API_KEY, collection_name="arxiv_demo"
+    )
 
     print(f"Indexed {len(chunks)} chunks to {vectorstore_path}")
 
@@ -89,6 +115,7 @@ def main():
     cfg = IndexConfig()
     papers_df, paper_authors, paper_references = load_data(drop_missing=cfg.drop_missing)
     index(cfg, papers_df, paper_authors, paper_references)
+
 
 if __name__ == "__main__":
     main()
