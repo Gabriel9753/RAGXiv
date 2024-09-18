@@ -21,7 +21,7 @@
         "**/CVS": false,
         "**/.DS_Store": false,
         "**/__pycache__": false,
-        "**/.venv": false,
+        "**/.venv": true,
         "**/node_modules": false,
         "**/.next": false,
         "**/.husky": false,

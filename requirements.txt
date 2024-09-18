@@ -1,24 +1,7 @@
-tqdm
+langchain_core
+langchain_openai
+langchain_huggingface
+langchain_chroma
 
-pandas
-numpy
-matplotlib
-scikit-learn
-jupyter
-
-### development
-black
-isort
-bandit
-mypy
-pylint
-
-### add specific project dependencies here:
-pillow
-tensorboard
-seaborn
-torch
-torchvision
-torchaudio
-spacy
-marimo
+streamlit
+chainlit

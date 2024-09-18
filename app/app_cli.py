@@ -1,41 +1,164 @@
-from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
-from langchain_openai import ChatOpenAI
+# Import necessary libraries
+from langchain.chains import create_history_aware_retriever, create_retrieval_chain
+from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_chroma import Chroma
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.runnables import RunnablePassthrough
+from langchain_community.chat_message_histories import ChatMessageHistory
+from langchain_core.chat_history import BaseChatMessageHistory
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.runnables.history import RunnableWithMessageHistory
+from langchain_openai import ChatOpenAI
 from langchain_huggingface import HuggingFaceEmbeddings
-from operator import itemgetter
+import config
 
-CHROMADIR = r"chroma/"
 
-def format_docs(docs):
-    return "\n\n".join([d.page_content for d in docs])
-
-def main():
-    template = """Answer the question in the question's language based on your knowledge and the following context:
-        {context}
-
-        Question: {question}
+def retriever():
     """
+    Initialize the retriever using the HuggingFace embeddings and Chroma for persistence.
 
-    condense_question = PromptTemplate.from_template(template="Condense the following question: {question}")
-
-    llm = ChatOpenAI(openai_api_base="http://localhost:5000/v1", openai_api_key="lm-studio")
-    prompt = ChatPromptTemplate.from_template(template=template)
-
-    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/allenai-specter")
-    vectorstore = Chroma(persist_directory=CHROMADIR, embedding_function=embeddings)
-    retriever = vectorstore.as_retriever()
-
-    chain = (
-        RunnablePassthrough.assign(source_documents=itemgetter("question") | retriever)
-        | RunnablePassthrough.assign(context=lambda inputs: format_docs(inputs["source_documents"]) if inputs["source_documents"] else "")
-        | RunnablePassthrough.assign(prompt=prompt)
-        | RunnablePassthrough.assign(response=lambda inputs: llm(inputs["prompt"].messages))
+    Returns:
+        Retriever: A retriever for retrieving relevant documents.
+    """
+    embedding_function = HuggingFaceEmbeddings(
+        model_name=config.EMBEDDING_MODEL_NAME,
+        model_kwargs={'device': 'cpu'}
     )
-    INPUT = "Wie öffnet man die Vordertür im Notfall?"
 
-    output = chain.invoke({"question": INPUT})
+    # Initialize the vectorstore using Chroma for persistence
+    vectorstore = Chroma(
+        persist_directory=config.CHROMADIR,
+        embedding_function=embedding_function
+    )
 
+    return vectorstore.as_retriever()
+
+
+contextualize_system_prompt = (
+    "Given a chat history and the latest user question "
+    "which might reference context in the chat history, "
+    "formulate a standalone question which can be understood "
+    "without the chat history. Do NOT answer the question, "
+    "just reformulate it if needed and otherwise return it as is."
+)
+contextualize_prompt = ChatPromptTemplate.from_messages(
+    [
+        ("system", contextualize_system_prompt),
+        MessagesPlaceholder("chat_history"),
+        ("human", "{input}"),
+    ]
+)
+
+contextualize_system_prompt = (
+    "You are an assistant for question-answering tasks. "
+    "Use the following pieces of retrieved context to answer "
+    "the question. If you don't know the answer, say that you "
+    "don't know. Use three sentences maximum and keep the "
+    "answer concise."
+    "\n\n"
+    "{context}"
+    "\n\n"
+    "If you can't find the answer, use your own knowledge to "
+    "provide a good answer."
+)
+
+qa_prompt = ChatPromptTemplate.from_messages(
+    [
+        ("system", contextualize_system_prompt),
+        MessagesPlaceholder("chat_history"),
+        ("human", "{input}"),
+    ]
+)
+
+def initialize():
+    llm = ChatOpenAI(openai_api_base="http://localhost:5000/v1", openai_api_key="lm-studio")
+
+    history_aware_retriever = create_history_aware_retriever(llm, retriever(), contextualize_prompt)
+
+    question_answer_chain = create_stuff_documents_chain(llm, qa_prompt)
+
+    rag_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)
+
+    # Return all the components for use
+    return {
+        "llm": llm,
+        "retriever": history_aware_retriever,
+        "chain": rag_chain
+    }
+
+
+class Memory:
+    def __init__(self):
+        self.store = {}
+        #TODO: Add persistent storage
+
+    def get(self, session_id):
+        """ Getter """
+        return self.store.get(session_id)
+
+    def set(self, session_id, value):
+        """ Setter """
+        self.store[session_id] = value
+
+    def get_session_history(self, session_id):
+        """ Getter for chat history """
+        if session_id not in self.store:
+            self.store[session_id] = ChatMessageHistory()
+        return self.store[session_id]
+
+
+
+def build_runnable(rag_chain, memory, keys:dict=None):
+    """ Build a runnable with message history """
+
+    if keys is None:
+        keys = {"input_messages_key":"input",
+                "history_messages_key":"chat_history",
+                "output_messages_key":"answer"}
+
+    return RunnableWithMessageHistory(
+        rag_chain,
+        memory.get_session_history,
+        input_messages_key=keys["input_messages_key"],
+        history_messages_key=keys["history_messages_key"],
+        output_messages_key=keys["output_messages_key"]
+    )
+
+import uuid
+def chat(rag, input_message):
+    """ Chat with the model """
+    # Get the session history
+    session_id = str(uuid.uuid4())
+    print(f"Session ID: {session_id}")
+    output_message = rag.invoke(
+         {"input": input_message},
+        config={
+            "configurable": {"session_id": session_id}
+        }
+    )
+    print(output_message["answer"])
+
+
+
+
+    return output_message
 if __name__ == "__main__":
-    main()
+    # Initialize components
+    llm, history_retriever, chain = initialize().values()
+
+    # Initialize session store for chat histories
+    session_store = {}
+    memory = Memory()
+    runnable = build_runnable(chain, memory)
+
+    input1 = "What is the attention mechanism in deep learning?"
+    chat(runnable, input1)
+    input2 = "How does it work?"
+    chat(runnable, input2)
+    input3 = "What is the difference to convolutional neural networks?"
+    chat(runnable, input3)
+
+    # Retrieval of inputs
+    retr = retriever()
+    # print(retr.vectorstore.similarity_search(input1))
+    # print(retr.invoke(input1))
+
+
