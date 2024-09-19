@@ -1,14 +1,15 @@
 # ------------------------------
 # Indexing
 # ------------------------------
-CHROMADIR = r"qdrant/"
+VSDIR = r"qdrant/"
+COLLECTION_NAME = "arxiv"
 EMBEDDING_MODEL_NAME = "sentence-transformers/allenai-specter"
 
 # ------------------------------
 # OpenAI + LM Studio
 # ------------------------------
-LLM_TYPE = "ollama"  # "lm-studio" or "ollama"
-# LLM_TYPE = "lm-studio"
+# LLM_TYPE = "ollama"
+LLM_TYPE = "lm-studio"
 
 # ------------------------------
 # Generation

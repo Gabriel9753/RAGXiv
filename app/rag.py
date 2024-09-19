@@ -1,125 +1,115 @@
-import config
+import os
+import uuid
+
+import yaml
+from dotenv import load_dotenv
 from langchain.chains import create_history_aware_retriever, create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain_chroma import Chroma
 from langchain_community.chat_message_histories import ChatMessageHistory
-from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables.history import RunnableWithMessageHistory
+from langchain_core.runnables import RunnablePassthrough
+from langchain_core.output_parsers import StrOutputParser
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_openai import ChatOpenAI
 from langchain_ollama.llms import OllamaLLM
 from langchain_qdrant import QdrantVectorStore
-from qdrant_client import QdrantClient
-from qdrant_client.http.models import Distance, VectorParams
-import yaml
-from dotenv import load_dotenv
-import os
-import uuid
+
+from langfuse.decorators import langfuse_context, observe
+
+import config
+import utils
 
 load_dotenv()
 
-url = "https://1ed4f85b-722b-4080-97a7-afe8eab7ae7a.europe-west3-0.gcp.cloud.qdrant.io:6333"
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
+QDRANT_URL = os.getenv("QDRANT_URL")
 
 
-def retriever():
+def get_embedding_function():
+    """Returns the embedding function based on the configuration."""
+    return HuggingFaceEmbeddings(model_name=config.EMBEDDING_MODEL_NAME,
+                                 model_kwargs={"device": "cpu"})
+
+
+def initialize_retriever():
     """
-    Initialize the retriever using the HuggingFace embeddings and Chroma for persistence.
-
+    Initialize the retriever using the HuggingFace embeddings and Qdrant vectorstore.
     Returns:
         Retriever: A retriever for retrieving relevant documents.
     """
-    embedding_function = HuggingFaceEmbeddings(model_name=config.EMBEDDING_MODEL_NAME, model_kwargs={"device": "cpu"})
+    embedding_function = get_embedding_function()
 
-    # Initialize the vectorstore using Chroma for persistence
-    vectorstore = QdrantVectorStore.from_existing_collection(
-        # path=config.CHROMADIR,
-        collection_name="arxiv_demo",
+    vs = QdrantVectorStore.from_existing_collection(
+        collection_name=config.COLLECTION_NAME,
         embedding=embedding_function,
-        url=url,
+        url=QDRANT_URL,
         api_key=QDRANT_API_KEY,
     )
-
-    return vectorstore.as_retriever()
-
-
-contextualize_system_prompt = (
-    "Given a chat history and the latest user question "
-    "which might reference context in the chat history, "
-    "formulate a standalone question which can be understood "
-    "without the chat history. Do NOT answer the question, "
-    "just reformulate it if needed and otherwise return it as is."
-)
-
-contextualize_prompt = ChatPromptTemplate.from_messages(
-    [
-        ("system", contextualize_system_prompt),
-        MessagesPlaceholder("chat_history"),
-        ("human", "{input}"),
-    ]
-)
-
-contextualize_system_prompt = (
-    "You are an assistant for question-answering tasks. "
-    "Use the following pieces of retrieved context to answer "
-    "the question. If you don't know the answer, say that you "
-    "don't know. Use three sentences maximum and keep the "
-    "answer concise. "
-    "\n\n"
-    "Context: {context}"
-)
-
-qa_prompt = ChatPromptTemplate.from_messages(
-    [
-        ("system", contextualize_system_prompt),
-        MessagesPlaceholder("chat_history"),
-        ("human", "{input}"),
-    ]
-)
+    return vs.as_retriever()
 
 
-def initialize():
+def initialize_llm():
+    """Initialize and return the LLM based on the configured type."""
     if config.LLM_TYPE == "lm-studio":
-        llm = ChatOpenAI(openai_api_base="http://localhost:5000/v1", openai_api_key="lm-studio")
+        return ChatOpenAI(openai_api_base="http://localhost:5000/v1", openai_api_key="lm-studio")
     elif config.LLM_TYPE == "ollama":
-        llm = OllamaLLM(model="llama3.1:8b", temperature=0.3)
+        return OllamaLLM(model="llama3.1:8b", temperature=0.3)
     else:
-        raise ValueError(f"Invalid LLM_TYPE: {config.LLM_TYPE}")
+        raise NotImplementedError(f"LLM type {config.LLM_TYPE} is not supported yet.")
 
-    history_aware_retriever = create_history_aware_retriever(llm, retriever(), contextualize_prompt)
 
+def build_prompt_templates():
+    """Create and return the prompt templates."""
+    reformulate_system_prompt = (
+        "Given a chat history and the latest user question, reformulate the question to be understood independently."
+    )
+    qa_system_prompt = (
+        "You are an assistant for question-answering tasks. Use the provided context to answer the question concisely."
+    )
+
+    contextualize_prompt = ChatPromptTemplate.from_messages(
+        [("system", reformulate_system_prompt), MessagesPlaceholder("chat_history"), ("human", "{input}")]
+    )
+
+    qa_prompt = ChatPromptTemplate.from_messages(
+        [("system", qa_system_prompt), MessagesPlaceholder("chat_history"), ("human", "{input}")]
+    )
+
+    return contextualize_prompt, qa_prompt
+
+
+def build_chain():
+    """Create the RAG chain using the retriever, prompts, and LLM."""
+    llm = initialize_llm()
+    retriever = initialize_retriever()
+
+    contextualize_prompt, qa_prompt = build_prompt_templates()
+
+    history_aware_retriever = create_history_aware_retriever(llm, retriever, contextualize_prompt)
     question_answer_chain = create_stuff_documents_chain(llm, qa_prompt)
 
-    rag_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)
-
-    # Return all the components for use
-    return {
-        "llm": llm,
-        "retriever": history_aware_retriever,
-        "chain": rag_chain,
-        "vectorstore": retriever().vectorstore,
-    }
+    return create_retrieval_chain(history_aware_retriever, question_answer_chain), retriever
 
 
 class Memory:
     def __init__(self):
         self.store = {}
-        # TODO: Add persistent storage
 
     def get(self, session_id):
-        """Getter"""
+        """Retrieve session data by session_id."""
         return self.store.get(session_id)
 
     def set(self, session_id, value):
-        """Setter"""
+        """Store session data by session_id."""
         self.store[session_id] = value
 
     def get_session_history(self, session_id):
-        """Getter for chat history"""
+        """Retrieve or initialize chat history for a session."""
         if session_id not in self.store:
             self.store[session_id] = ChatMessageHistory()
         return self.store[session_id]
+
 
 
 def build_runnable(rag_chain, memory, keys: dict = None):
@@ -136,11 +126,19 @@ def build_runnable(rag_chain, memory, keys: dict = None):
         output_messages_key=keys["output_messages_key"],
     )
 
-
+@observe(name="chat()", as_type="generation")
 def chat(rag, input_message, stream=False):
-    """Chat with the model"""
+    """Chat with the model using the RAG chain."""
+    langfuse_handler = langfuse_context.get_current_langchain_handler()
     session_id = str(uuid.uuid4())
-    return rag.invoke({"input": input_message}, config={"configurable": {"session_id": session_id}})
+    response = rag.invoke(
+        {"input": input_message},
+        config={"configurable": {"session_id": session_id}, "callbacks": [langfuse_handler]},
+    )
+
+    langfuse_context.update_current_observation(
+        input=input_message, output=response["answer"], session_id=session_id
+    )
 
 
 def get_similar_papers(vectorstore, query, k=5):
@@ -156,28 +154,33 @@ def get_paper_questions(vectorstore, arxiv_id, k=5):
 
 
 if __name__ == "__main__":
+    from langfuse import Langfuse
+
+    langfuse = Langfuse()
+
+    print(langfuse.auth_check())
     # Initialize components
-    # llm, history_retriever, chain = initialize().values()
+    chain = build_chain()
     yaml_path = "app/questions.yaml"
 
     with open(yaml_path, "r", encoding="utf-8") as f:
         questions = yaml.load(f, Loader=yaml.FullLoader)["questions"]
 
-    # for i, question in enumerate(questions, 1):
-    #     print(f"##################\n### Question {i} ###\n##################")
-    #     memory = Memory()
-    #     runnable = build_runnable(chain, memory)
-    #     q = question["question"]
-    #     a = question["answer"]
-    #     pdf = question["paper"]
+    for i, question in enumerate(questions, 1):
+        print(f"##################\n### Question {i} ###\n##################")
+        memory = Memory()
+        runnable = build_runnable(chain, memory)
+        q = question["question"]
+        a = question["answer"]
+        pdf = question["paper"]
 
-    #     # Chat with the model
-    #     output = chat(runnable, q)["answer"]
-    #     print(
-    #         f'~~~ Question ~~~\n{q}\n\n~~~ Output ~~~\n{output}\n\n~~~ "Correct" Answer ~~~\n{a}\n\n~~~ Paper ~~~\n{pdf}\n'
-    #     )
+        # Chat with the model
+        output = chat(runnable, q)["answer"]
+        print(
+            f'~~~ Question ~~~\n{q}\n\n~~~ Output ~~~\n{output}\n\n~~~ "Correct" Answer ~~~\n{a}\n\n~~~ Paper ~~~\n{pdf}\n'
+        )
 
     # Retrieval of inputs
-    retr = retriever()
+    retr = initialize_retriever()
     print(retr.vectorstore.similarity_search(questions[0]["question"]))
     print(retr.invoke(questions[0]["question"]))

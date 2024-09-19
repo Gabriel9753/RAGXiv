@@ -25,6 +25,8 @@ langchain_core
 langchain_openai
 langchain_huggingface
 langchain_chroma
+langchain_qdrant
+qdrant_client
 streamlit
 chainlit
 pypdf
