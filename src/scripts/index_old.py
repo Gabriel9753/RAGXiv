@@ -17,7 +17,6 @@ from langchain_qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import Distance, VectorParams
 from dotenv import load_dotenv
-from db_manager import DBManager, init_db
 
 # add the src directory to the path
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
@@ -50,14 +49,10 @@ def index(cfg, papers_df, paper_authors, paper_references):
 
     print(f"Indexing {len(pdfs)} PDFs.")
 
-    # 1. Initialize database manager
-    init_db()
-    db_manager = DBManager()
-
     # 2. Extract data using multithreading
     documents = []
     with tqdm(total=len(pdfs), desc="Extracting text from PDFs") as pbar:
-        with ProcessPoolExecutor(max_workers=8) as executor:
+        with ProcessPoolExecutor(max_workers=6) as executor:
             futures = {executor.submit(load_pdf, file): file for file in pdfs}
             for future in as_completed(futures):
                 try:
@@ -72,43 +67,29 @@ def index(cfg, papers_df, paper_authors, paper_references):
     chunks = text_splitter.split_documents(documents)
     print(f"Split {len(chunks)} documents into chunks.")
 
-    added_arxiv_ids = set()
-
-    # 3. Insert metadata into chunks and save to PostgreSQL
+    # 3. Insert metadata into chunks
     for chunk in chunks:
         source = chunk.metadata["source"]
         arxiv_id = os.path.basename(source).replace(".pdf", "")
+        row = papers_df[papers_df["arxiv_id"] == arxiv_id].iloc[0]
         chunk.metadata["arxiv_id"] = arxiv_id
-        added_arxiv_ids.add(arxiv_id)
-
-    # 4. Insert metadata into PostgreSQL
-    for index, row in papers_df.iterrows():
-        arxiv_id = row["arxiv_id"]
-        semantic_scholar_id = row["semantic_scholar_id"]
-        if arxiv_id not in added_arxiv_ids:
-            continue
-
-        # Get authors and references
-        authors = paper_authors.get(arxiv_id, [])
-        references = paper_references.get(arxiv_id, [])
-
-        # Insert into PostgreSQL using the DBManager
-        db_manager.insert_paper(
-            arxiv_id=str(arxiv_id),
-            semantic_scholar_id=str(semantic_scholar_id),
-            title=str(row["title"]),
-            super_category=str(row["super_category"]),
-            update_year=int(row["update_year"]),
-            reference_count=int(row["reference_count"]),
-            citation_count=int(row["citation_count"]),
-            author_count=int(row["author_count"]),
-            authors=authors,
-            references=references
-        )
+        chunk.metadata["title"] = str(row["title"])
+        chunk.metadata["super_category"] = str(row["super_category"])
+        chunk.metadata["reference_count"] = str(row["reference_count"])
+        chunk.metadata["citation_count"] = str(row["citation_count"])
+        chunk.metadata["author_count"] = str(row["author_count"])
+        # TODO: Add metadata to another db for later use so not every chunk has the data...
 
     # 5. Save to vectorstore
+    if os.path.exists(vectorstore_path):
+        shutil.rmtree(vectorstore_path)
+
+    # client = QdrantClient(path=vectorstore_path)
     url = "https://1ed4f85b-722b-4080-97a7-afe8eab7ae7a.europe-west3-0.gcp.cloud.qdrant.io:6333"
-    client = QdrantClient(url=url, api_key=QDRANT_API_KEY)
+    client = QdrantClient(
+        url=url,
+        api_key=QDRANT_API_KEY,
+    )
     if client.collection_exists("arxiv_demo"):
         client.delete_collection("arxiv_demo")
 
@@ -126,8 +107,8 @@ def index(cfg, papers_df, paper_authors, paper_references):
     vectorstore.from_documents(
         chunks, embedding=embeddings, url=url, api_key=QDRANT_API_KEY, collection_name="arxiv_demo"
     )
-    db_manager.close()
 
+    print(f"Indexed {len(chunks)} chunks to {vectorstore_path}")
 
 
 def main():

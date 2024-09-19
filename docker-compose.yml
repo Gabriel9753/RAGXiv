@@ -1,0 +1,29 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgres:14
+    environment:
+      POSTGRES_USER: admin  # Change this
+      POSTGRES_PASSWORD: admin  # Change this
+      POSTGRES_DB: metadata_db
+    ports:
+      - "5432:5432"  # PostgreSQL runs on port 5432
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+
+  metabase:
+    image: metabase/metabase
+    container_name: metabase
+    ports:
+      - "3000:3000"
+    environment:
+      MB_DB_TYPE: postgres
+      MB_DB_DBNAME: metadata_db
+      MB_DB_PORT: 5432
+      MB_DB_USER: admin
+      MB_DB_PASS: admin
+      MB_DB_HOST: postgres
+
+volumes:
+  postgres-data:
+
