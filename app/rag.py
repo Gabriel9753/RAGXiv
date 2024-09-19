@@ -1,4 +1,3 @@
-# Import necessary libraries
 import config
 from langchain.chains import create_history_aware_retriever, create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
@@ -22,6 +21,7 @@ load_dotenv()
 
 url = "https://1ed4f85b-722b-4080-97a7-afe8eab7ae7a.europe-west3-0.gcp.cloud.qdrant.io:6333"
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
+
 
 def retriever():
     """
@@ -66,14 +66,8 @@ contextualize_system_prompt = (
     "the question. If you don't know the answer, say that you "
     "don't know. Use three sentences maximum and keep the "
     "answer concise. "
-    "If the question requires specific information/numbers/metrics from the paper, "
-    "then use that information to answer the question and cite the source. "
-    "If you can't find the answer, use your own knowledge to "
-    "provide a good answer."
     "\n\n"
     "Context: {context}"
-
-
 )
 
 qa_prompt = ChatPromptTemplate.from_messages(
@@ -100,7 +94,12 @@ def initialize():
     rag_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)
 
     # Return all the components for use
-    return {"llm": llm, "retriever": history_aware_retriever, "chain": rag_chain}
+    return {
+        "llm": llm,
+        "retriever": history_aware_retriever,
+        "chain": rag_chain,
+        "vectorstore": retriever().vectorstore,
+    }
 
 
 class Memory:
@@ -138,13 +137,22 @@ def build_runnable(rag_chain, memory, keys: dict = None):
     )
 
 
-def chat(rag, input_message):
+def chat(rag, input_message, stream=False):
     """Chat with the model"""
-    # Get the session history
     session_id = str(uuid.uuid4())
-    output_message = rag.invoke({"input": input_message}, config={"configurable": {"session_id": session_id}})
+    return rag.invoke({"input": input_message}, config={"configurable": {"session_id": session_id}})
 
-    return output_message
+
+def get_similar_papers(vectorstore, query, k=5):
+    """Get similar papers based on a query"""
+    results = vectorstore.similarity_search(query, k=k)
+    return [{"title": doc.metadata.get("title"), "arxiv_id": doc.metadata.get("arxiv_id")} for doc in results]
+
+
+def get_paper_questions(vectorstore, arxiv_id, k=5):
+    """Get relevant questions for a specific paper"""
+    results = vectorstore.similarity_search(f"arxiv_id:{arxiv_id}", k=k)
+    return [doc.page_content for doc in results if doc.metadata.get("arxiv_id") == arxiv_id]
 
 
 if __name__ == "__main__":
