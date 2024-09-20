@@ -16,6 +16,7 @@ from langchain_ollama.llms import OllamaLLM
 from langchain_qdrant import QdrantVectorStore
 
 from langfuse.decorators import langfuse_context, observe
+from langfuse.callback import CallbackHandler
 
 import config
 import utils
@@ -25,6 +26,7 @@ load_dotenv()
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
 QDRANT_URL = os.getenv("QDRANT_URL")
 
+langfuse_handler = CallbackHandler(session_id="conversation_chain")
 
 def get_embedding_function():
     """Returns the embedding function based on the configuration."""
@@ -62,10 +64,13 @@ def initialize_llm():
 def build_prompt_templates():
     """Create and return the prompt templates."""
     reformulate_system_prompt = (
-        "Given a chat history and the latest user question, reformulate the question to be understood independently."
+        "Given a chat history and the latest user question, \
+        reformulate the question to be understood independently."
     )
     qa_system_prompt = (
-        "You are an assistant for question-answering tasks. Use the provided context to answer the question concisely."
+        "You are an assistant for question-answering tasks. \
+        Use the provided context to answer the question concisely.\n\n \
+        Context: {context}"
     )
 
     contextualize_prompt = ChatPromptTemplate.from_messages(
@@ -89,7 +94,7 @@ def build_chain():
     history_aware_retriever = create_history_aware_retriever(llm, retriever, contextualize_prompt)
     question_answer_chain = create_stuff_documents_chain(llm, qa_prompt)
 
-    return create_retrieval_chain(history_aware_retriever, question_answer_chain), retriever
+    return create_retrieval_chain(history_aware_retriever, question_answer_chain)
 
 
 class Memory:
@@ -106,12 +111,19 @@ class Memory:
 
     def get_session_history(self, session_id):
         """Retrieve or initialize chat history for a session."""
+        print("SessionID: ", session_id)
         if session_id not in self.store:
             self.store[session_id] = ChatMessageHistory()
+
+        print("Session History: ", self.store[session_id], type(self.store[session_id]))
+
         return self.store[session_id]
 
+    def clear(self):
+        """Clear the memory."""
+        self.store = {}
 
-
+@observe(name="build_runnable()", as_type="generation")
 def build_runnable(rag_chain, memory, keys: dict = None):
     """Build a runnable with message history"""
 
@@ -127,30 +139,40 @@ def build_runnable(rag_chain, memory, keys: dict = None):
     )
 
 @observe(name="chat()", as_type="generation")
-def chat(rag, input_message, stream=False):
+def chat(rag, input_message, session_id, stream=False):
     """Chat with the model using the RAG chain."""
-    langfuse_handler = langfuse_context.get_current_langchain_handler()
-    session_id = str(uuid.uuid4())
+    # langfuse_handler = langfuse_context.get_current_langchain_handler()
+
     response = rag.invoke(
         {"input": input_message},
         config={"configurable": {"session_id": session_id}, "callbacks": [langfuse_handler]},
     )
 
-    langfuse_context.update_current_observation(
-        input=input_message, output=response["answer"], session_id=session_id
-    )
+    # langfuse_context.update_current_observation(
+    #     input=input_message, output=response["answer"], session_id=session_id
+    # )
+    return response
 
-
+@observe(name="get_similar_papers()", as_type="retrieval")
 def get_similar_papers(vectorstore, query, k=5):
     """Get similar papers based on a query"""
     results = vectorstore.similarity_search(query, k=k)
     return [{"title": doc.metadata.get("title"), "arxiv_id": doc.metadata.get("arxiv_id")} for doc in results]
 
-
+@observe(name="get_paper_questions()", as_type="retrieval")
 def get_paper_questions(vectorstore, arxiv_id, k=5):
     """Get relevant questions for a specific paper"""
     results = vectorstore.similarity_search(f"arxiv_id:{arxiv_id}", k=k)
     return [doc.page_content for doc in results if doc.metadata.get("arxiv_id") == arxiv_id]
+
+
+
+def summarize(llm, paper):
+    from langchain.chains.summarize import load_summarize_chain
+    #TODO FETCH PAPER
+    chain = load_summarize_chain(llm, chain_type="stuff", verbose=True)
+    chain.run({"input": paper})
+
 
 
 if __name__ == "__main__":
@@ -158,29 +180,29 @@ if __name__ == "__main__":
 
     langfuse = Langfuse()
 
-    print(langfuse.auth_check())
+    print("Langfuse available: ",langfuse.auth_check())
     # Initialize components
     chain = build_chain()
     yaml_path = "app/questions.yaml"
 
     with open(yaml_path, "r", encoding="utf-8") as f:
         questions = yaml.load(f, Loader=yaml.FullLoader)["questions"]
-
+    memory = Memory()
+    runnable = build_runnable(chain, memory)
+    session_id = str(uuid.uuid4())
     for i, question in enumerate(questions, 1):
         print(f"##################\n### Question {i} ###\n##################")
-        memory = Memory()
-        runnable = build_runnable(chain, memory)
+
         q = question["question"]
         a = question["answer"]
         pdf = question["paper"]
 
         # Chat with the model
-        output = chat(runnable, q)["answer"]
-        print(
-            f'~~~ Question ~~~\n{q}\n\n~~~ Output ~~~\n{output}\n\n~~~ "Correct" Answer ~~~\n{a}\n\n~~~ Paper ~~~\n{pdf}\n'
-        )
+        output = chat(runnable, q, session_id=session_id)
+        # print(
+        #     f'~~~ Question ~~~\n{q}\n\n~~~ Output ~~~\n{output["answer"]}\n\n~~~ "Correct" Answer ~~~\n{a}\n\n~~~ Paper ~~~\n{pdf}\n'
+        # )
+        print(output)
 
-    # Retrieval of inputs
-    retr = initialize_retriever()
-    print(retr.vectorstore.similarity_search(questions[0]["question"]))
-    print(retr.invoke(questions[0]["question"]))
+
+

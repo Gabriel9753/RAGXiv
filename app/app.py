@@ -1,12 +1,13 @@
 import streamlit as st
 import uuid
 import time
-from rag import initialize, Memory, build_runnable, chat, get_similar_papers, get_paper_questions
+
 import os
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from src.scripts.db_manager import DBManager
+import rag
 
 # Set page config first
 st.set_page_config(page_title="RAG Chatbot", page_icon="🤖", layout="centered")
@@ -21,19 +22,18 @@ st.components.v1.html(
 
 @st.cache_resource
 def get_rag_components():
-    components = initialize()
-    rag_chain = components["chain"]
-    vectorstore = components["vectorstore"]
-    memory = Memory()
-    runnable = build_runnable(rag_chain, memory)
-    return components, rag_chain, vectorstore, memory, runnable
+    chain = rag.build_chain()
+    memory = rag.Memory()
+    runnable = rag.build_runnable(chain, memory)
+    vectorstore = rag.initialize_retriever().vectorstore
+    return chain, vectorstore, memory, runnable
 
 @st.cache_resource
 def get_db_manager():
     return DBManager()
 
 # Use the cached function to get the components
-components, rag_chain, vectorstore, memory, runnable = get_rag_components()
+rag_chain, vectorstore, memory, runnable = get_rag_components()
 db_manager = get_db_manager()
 
 # Initialize session state
@@ -71,14 +71,14 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 def prompt_similar(prompt):
-    similar_papers = get_similar_papers(vectorstore, prompt[8:])
+    similar_papers = rag.get_similar_papers(vectorstore, prompt[8:])
     full_response = "Here are similar papers:\n\n" + "\n".join([f"- [{paper['title']}](https://arxiv.org/abs/{paper['arxiv_id']})" for paper in similar_papers])
     return full_response
 
 def prompt_question(prompt):
     """Get answers to questions for a specific paper"""
     arxiv_id = prompt.split()[1]
-    questions = get_paper_questions(vectorstore, arxiv_id)
+    questions = rag.get_paper_questions(vectorstore, arxiv_id)
     full_response = f"Here are relevant questions for paper {arxiv_id}:\n\n" + "\n".join([f"- {q}" for q in questions])
     return full_response
 
@@ -87,10 +87,11 @@ def prompt_db(prompt, message_placeholder):
     full_response = ""
     _input = prompt.split()[1:]
     _input = " ".join(_input)
-    response = chat(runnable, _input)
-
+    response = rag.chat(runnable, _input, st.session_state.session_id)
+    print(response)
     # Simulate stream of response with milliseconds delay
     for chunk in response["answer"].split():
+
         full_response += chunk + " "
         time.sleep(0.01)
         message_placeholder.markdown(full_response + "▌")
@@ -130,7 +131,8 @@ def prompt_db(prompt, message_placeholder):
 
 def normal_chat(prompt, message_placeholder):
     full_response = ""
-    response = chat(runnable, prompt)
+    response = rag.chat(runnable, prompt, st.session_state.session_id)
+    print(f"Response: {response}")
     # Simulate stream of response with milliseconds delay
     for chunk in response["answer"].split():
         full_response += chunk + " "
@@ -155,6 +157,7 @@ def normal_chat(prompt, message_placeholder):
 prompt = st.chat_input("Ask me anything about the papers in the knowledge base")
 
 if prompt:
+    # print(memory.get_session_history(st.session_state.session_id))
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
@@ -175,12 +178,12 @@ if prompt:
         message_placeholder.markdown(full_response)
 
     st.session_state.messages.append({"role": "assistant", "content": full_response})
-    memory.set(st.session_state.session_id, st.session_state.messages)
+    # memory.set(st.session_state.session_id, st.session_state.messages)
 
 # Add a button to clear the chat history
 if st.sidebar.button("Clear Chat History"):
     st.session_state.messages = []
-    memory.set(st.session_state.session_id, None)
+    memory.clear()
     st.rerun()
 
 # Display the session ID in the sidebar

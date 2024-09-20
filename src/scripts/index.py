@@ -57,7 +57,7 @@ def index(cfg, papers_df, paper_authors, paper_references):
     # 2. Extract data using multithreading
     documents = []
     with tqdm(total=len(pdfs), desc="Extracting text from PDFs") as pbar:
-        with ProcessPoolExecutor(max_workers=8) as executor:
+        with ProcessPoolExecutor(max_workers=cfg.workers) as executor:
             futures = {executor.submit(load_pdf, file): file for file in pdfs}
             for future in as_completed(futures):
                 try:
@@ -109,22 +109,22 @@ def index(cfg, papers_df, paper_authors, paper_references):
     # 5. Save to vectorstore
     url = "https://1ed4f85b-722b-4080-97a7-afe8eab7ae7a.europe-west3-0.gcp.cloud.qdrant.io:6333"
     client = QdrantClient(url=url, api_key=QDRANT_API_KEY)
-    if client.collection_exists("arxiv_demo"):
-        client.delete_collection("arxiv_demo")
+    if client.collection_exists(cfg.collection_name):
+        client.delete_collection(cfg.collection_name)
 
     client.create_collection(
-        collection_name="arxiv_demo",
+        collection_name=cfg.collection_name,
         vectors_config=VectorParams(size=768, distance=Distance.COSINE),
     )
 
     vectorstore = QdrantVectorStore(
         client=client,
         embedding=embeddings,
-        collection_name="arxiv_demo",
+        collection_name=cfg.collection_name,
     )
 
     vectorstore.from_documents(
-        chunks, embedding=embeddings, url=url, api_key=QDRANT_API_KEY, collection_name="arxiv_demo"
+        chunks, embedding=embeddings, url=url, api_key=QDRANT_API_KEY, collection_name=cfg.collection_name
     )
     db_manager.close()
 

@@ -50,4 +50,6 @@ class IndexConfig(Config):
             "add_start_index": True,
         }
         self.drop_missing = True  # drop papers without metadata from semantic scholar
-        self.limit = None
+        self.limit = 10
+        self.workers = 4
+        self.collection_name = "ilyi-test"
