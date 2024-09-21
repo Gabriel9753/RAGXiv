@@ -2,8 +2,8 @@
 # Indexing
 # ------------------------------
 VSDIR = r"qdrant/"
-COLLECTION_NAME = "arxiv_demo"
-# COLLECTION_NAME = "ilyi-test"
+
+COLLECTION_NAME = "ilyi-test"
 EMBEDDING_MODEL_NAME = "sentence-transformers/allenai-specter"
 
 # ------------------------------
