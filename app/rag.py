@@ -3,7 +3,8 @@ import uuid
 
 import yaml
 from dotenv import load_dotenv
-from langchain.chains import create_history_aware_retriever, create_retrieval_chain
+from langchain.chains import create_history_aware_retriever
+from langchain.chains.retrieval import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
@@ -170,8 +171,28 @@ def get_paper_questions(vectorstore, arxiv_id, k=5):
 def summarize(llm, paper):
     from langchain.chains.summarize import load_summarize_chain
     #TODO FETCH PAPER
+
+    # Option 1
     chain = load_summarize_chain(llm, chain_type="stuff", verbose=True)
     chain.run({"input": paper})
+
+    # Option 2
+    content = "FETCH PAPER CONTENT"
+
+    SUMMARIZATION_TEMPLATE = """
+    Summarize the following academic paper from arXiv, focusing on the key points and contributions. Include a brief overview of the problem the paper addresses, the methods used, the main findings, and any conclusions or implications. Aim to condense the content while maintaining accuracy and clarity. Use clear and concise language, avoiding technical jargon when possible.
+
+    Here is the paper content:
+
+    {input}
+    """
+    prompt = ChatPromptTemplate.from_messages([("system", SUMMARIZATION_TEMPLATE), ("human", content)])
+
+    chain = (prompt | llm | StrOutputParser())
+
+    return chain.invoke(
+        {"input": content}
+    )
 
 
 
