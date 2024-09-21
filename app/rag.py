@@ -57,7 +57,7 @@ def initialize_llm():
     if config.LLM_TYPE == "lm-studio":
         return ChatOpenAI(openai_api_base="http://localhost:5000/v1", openai_api_key="lm-studio")
     elif config.LLM_TYPE == "ollama":
-        return OllamaLLM(model="llama3.1:8b", temperature=0.3)
+        return OllamaLLM(model="qwen2.5:7b", temperature=0.3)
     else:
         raise NotImplementedError(f"LLM type {config.LLM_TYPE} is not supported yet.")
 

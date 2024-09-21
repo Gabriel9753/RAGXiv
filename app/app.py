@@ -12,14 +12,6 @@ import rag
 # Set page config first
 st.set_page_config(page_title="RAG Chatbot", page_icon="🤖", layout="centered")
 
-# Include custom JavaScript
-st.components.v1.html(
-    """
-    <script src="app/static/streamlit_app.js"></script>
-    """,
-    height=0,
-)
-
 @st.cache_resource
 def get_rag_components():
     chain = rag.build_chain()
@@ -52,18 +44,6 @@ st.sidebar.info(
     "This chatbot uses Retrieval-Augmented Generation (RAG) to provide "
     "informative responses based on a knowledge base of academic papers."
 )
-
-# Command buttons
-# TODO: Commands not working
-st.sidebar.header("Quick Commands")
-st.sidebar.button("Get Similar Papers", on_click=lambda: st.components.v1.html(
-    f"""<script>insertCommand('/similar ')</script>""",
-    height=0
-))
-st.sidebar.button("Get Paper Questions", on_click=lambda: st.components.v1.html(
-    f"""<script>insertCommand('/q ')</script>""",
-    height=0
-))
 
 # Main chat interface
 for message in st.session_state.messages:

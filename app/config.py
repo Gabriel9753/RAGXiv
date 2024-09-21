@@ -2,7 +2,7 @@
 # Indexing
 # ------------------------------
 VSDIR = r"qdrant/"
-COLLECTION_NAME = "arxiv_papers_SemanticChunker"
+COLLECTION_NAME = "arxiv_papers_RecursiveCharacterTextSplitter"
 # COLLECTION_NAME = "ilyi-test"
 EMBEDDING_MODEL_NAME = "all-mpnet-base-v2"
 
