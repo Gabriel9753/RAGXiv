@@ -50,8 +50,9 @@ class Reference(Base):
     paper = relationship("PaperMetadata", back_populates="references")
 
 
-def init_db():
-    # Base.metadata.drop_all(bind=engine)
+def init_db(clear=False):
+    if clear:
+        Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
 
 
@@ -89,23 +90,28 @@ class DBManager:
         )
         # Add authors
         if len(authors) > 0:
+            unique_authors = set()
             for author_name in authors:
                 _id, name = author_name["authorId"], author_name["name"]
-                if _id is None or name is None:
+                if _id is None or name is None or _id in unique_authors:
                     continue
+                unique_authors.add(_id)
                 _id, name = str(_id), str(name)
                 author = self.session.query(Author).filter(Author.author_id == _id).first()
                 if not author:
                     author = Author(author_id=_id, name=name)
+                    self.session.add(author)
                 new_paper.authors.append(author)
 
         # # Add references
         if len(references) > 0:
+            unique_references = set()
             for reference in references:
                 source_arxiv_id = arxiv_id
                 paper_semantic_scholar_id, reference_title = reference["paperId"], reference["title"]
-                if reference_title is None or paper_semantic_scholar_id is None:
+                if reference_title is None or paper_semantic_scholar_id is None or paper_semantic_scholar_id in unique_references:
                     continue
+                unique_references.add(paper_semantic_scholar_id)
                 paper_semantic_scholar_id, reference_title = str(paper_semantic_scholar_id), str(reference_title)
 
                 referenced_paper = (

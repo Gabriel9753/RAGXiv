@@ -88,7 +88,6 @@ def prompt_db(prompt, message_placeholder):
     _input = prompt.split()[1:]
     _input = " ".join(_input)
     response = rag.chat(runnable, _input, st.session_state.session_id)
-    print(response)
     # Simulate stream of response with milliseconds delay
     for chunk in response["answer"].split():
 
@@ -132,7 +131,6 @@ def prompt_db(prompt, message_placeholder):
 def normal_chat(prompt, message_placeholder):
     full_response = ""
     response = rag.chat(runnable, prompt, st.session_state.session_id)
-    print(f"Response: {response}")
     # Simulate stream of response with milliseconds delay
     for chunk in response["answer"].split():
         full_response += chunk + " "
@@ -143,12 +141,13 @@ def normal_chat(prompt, message_placeholder):
     # Extract used papers and pages
     used_papers = set()
     for doc in response["context"]:
-        title = doc.metadata.get("title")
         arxiv_id = doc.metadata.get("arxiv_id")
         page = doc.metadata.get("page")
+        # title = doc.metadata.get("title")
+        paper_metadata = db_manager.get_metadata_from_arxivid(arxiv_id)
+        title = paper_metadata.get("title", None)
         if title and arxiv_id:
             used_papers.add(f"[{title}](https://arxiv.org/abs/{arxiv_id}) (p. {page})")
-
     if used_papers:
         full_response += "\n\n*Sources:* " + ", ".join(used_papers)
 

@@ -70,6 +70,67 @@ def custom_countplot(df, column, cfg, top_n=None, title=None):
     plt.close()
 
 
+def custom_histplot(df, column, cfg, title=None):
+    # Set the style for the plot
+    sns.set_theme(style=cfg.plot_style, palette=cfg.color_palette)
+
+    plt.figure(figsize=cfg.figure_size)
+
+    # Create histogram plot
+    ax = sns.histplot(x=column, data=df, color=cfg.primary_color)
+
+    # Customize the plot
+    if title is None:
+        plt.title(f"Distribution of {column}", fontsize=cfg.title_font_size)
+    else:
+        plt.title(title, fontsize=cfg.title_font_size)
+    plt.xlabel(column, fontsize=cfg.label_font_size)
+    plt.ylabel("Count", fontsize=cfg.label_font_size)
+
+    # Save the plot
+    plt.tight_layout()
+    filename = f'{column}_distribution.png'
+    plt.savefig(os.path.join(cfg.eda_dir, filename), dpi=cfg.dpi, bbox_inches="tight")
+    plt.close()
+
+def custom_wordcloud(df, column, cfg, title=None, remove_stopwords=True):
+    from wordcloud import WordCloud
+    from collections import Counter
+    import matplotlib.pyplot as plt
+
+    # Set the style for the plot
+    sns.set_theme(style=cfg.plot_style, palette=cfg.color_palette)
+
+    plt.figure(figsize=cfg.figure_size)
+
+    # Prepare data
+    data = df[column].str.split().explode()
+    if remove_stopwords:
+        import nltk
+        from nltk.corpus import stopwords
+        nltk.download('stopwords')
+        stop_words = set(stopwords.words('english'))
+        data = [word for word in data if word.lower() not in stop_words]
+    word_count = Counter(data)
+
+    # Create wordcloud
+    wc = WordCloud(width=1920, height=1080).generate_from_frequencies(word_count)
+
+    # Customize the plot
+    if title is None:
+        plt.title(f"Wordcloud of {column}", fontsize=cfg.title_font_size)
+    else:
+        plt.title(title, fontsize=cfg.title_font_size)
+
+    plt.imshow(wc, interpolation="bilinear")
+    plt.axis("off")
+
+    # Save the plot
+    plt.tight_layout()
+    filename = f'{column}_wordcloud.png'
+    plt.savefig(os.path.join(cfg.eda_dir, filename), dpi=cfg.dpi, bbox_inches="tight")
+    plt.close()
+
 def main():
     cfg = EDAConfig()
     setup_font(cfg)
@@ -80,12 +141,28 @@ def main():
     os.makedirs(cfg.eda_dir, exist_ok=True)
 
     # count plots for different columns
+    print("Creating count plots...")
     custom_countplot(paper_df, "author_count", cfg, title="Distribution of authors per paper", top_n=15)
     custom_countplot(paper_df, "reference_count", cfg, top_n=15)
     custom_countplot(paper_df, "citation_count", cfg, top_n=15)
     custom_countplot(paper_df, "update_year", cfg, top_n=15)
     custom_countplot(paper_df, "title_words", cfg, top_n=15)
     custom_countplot(paper_df, "abstract_words", cfg, top_n=15)
+
+    # hist plots for different columns
+    print("Creating hist plots...")
+    custom_histplot(paper_df, "author_count", cfg)
+    custom_histplot(paper_df, "reference_count", cfg)
+    custom_histplot(paper_df, "citation_count", cfg)
+    custom_histplot(paper_df, "update_year", cfg)
+    custom_histplot(paper_df, "title_words", cfg)
+    custom_histplot(paper_df, "abstract_words", cfg)
+
+    # wordclouds for different columns
+    print("Creating wordclouds...")
+    custom_wordcloud(paper_df, "title", cfg)
+    custom_wordcloud(paper_df, "abstract", cfg)
+
 
 
 if __name__ == "__main__":
