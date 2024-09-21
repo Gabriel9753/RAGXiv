@@ -9,7 +9,9 @@ def format_docs(d:dict):
     """Formats the documents for prompt generation."""
     if isinstance(d, list):
         res = "\n\n".join([doc.page_content for doc in d])
+
     else:
+        print(d)
         res = "\n\n".join(
             [doc.page_content for doc in d["context"]]
         )
