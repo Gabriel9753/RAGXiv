@@ -16,10 +16,17 @@ cfg = Config()
 
 params = {"switchLocale": "y", "siteEntryPassthrough": "true"}
 
+def check_if_already_downloaded(id, paper_dir):
+    if f"{id}.pdf" in os.listdir(paper_dir):
+        return True
+    else:
+        return False
 
 @retry(tries=3, delay=1, exceptions=(RequestException, HTTPError))
 def download_paper(row, url_template, paper_dir):
     id = row["id"]
+    if check_if_already_downloaded(id, paper_dir):
+        return id
     url = url_template.format(id=id)
     response = requests.get(url, params=params)
     response.raise_for_status()  # Raises an exception for non-200 status codes
