@@ -13,22 +13,10 @@ session_id = hashlib.md5(page_name.encode()).hexdigest()
 # Initialize session state
 if session_id not in st.session_state.page_states:
     st.session_state.page_states[session_id] = PageState(session_id, page_name)
-if "rag_method" not in st.session_state:
-    st.session_state.rag_method = "stuffing"
 
 # Get the RAG components (specific chain), depending on the method chosen
-chain, memory, runnable = get_rag_components(_chain=st.session_state.rag_method)
-
-with st.sidebar:
-    st.markdown("### RAG Methods")
-    # TODO: Add missing chains
-    rag_method = st.selectbox("Which method to use?", ("Stuffing", "Reduction", "Reranking", "HyDE")).lower()
-    # If the method has changed, clear the chat history and update the RAG components
-    if st.session_state.rag_method != rag_method:
-        st.session_state.page_states[session_id].clear_messages()
-        get_rag_components.clear()
-        chain, memory, runnable = get_rag_components(_chain=rag_method)
-        st.session_state.rag_method = rag_method
+# TODO: Add missing chains
+chain, memory, runnable = get_rag_components(_chain="similar")
 
 # If the user clicks the "Clear chat history" button, clear the chat history
 if st.sidebar.button("Clear chat history"):
@@ -38,7 +26,7 @@ if st.sidebar.button("Clear chat history"):
 # Display the chat history for the current session
 display_previous_messages(session_id)
 
-def normal_chat(prompt, message_placeholder):
+def get_similar(prompt, message_placeholder):
     full_response = ""
     response = rag.chat(runnable, prompt, session_id)
     for chunk in response["answer"].split():
@@ -48,7 +36,7 @@ def normal_chat(prompt, message_placeholder):
     message_placeholder.markdown(full_response)
     return full_response, response
 
-prompt = st.chat_input("Ask me anything about the papers in the knowledge base")
+prompt = st.chat_input("Give me some context to find similar papers")
 # If the user has entered a prompt, chat with the assistant
 if prompt:
     # Add the user's prompt to the message history and display it
@@ -60,13 +48,10 @@ if prompt:
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
         # First just get response
-        full_response, response = normal_chat(prompt, message_placeholder)
+        full_response, response = get_similar(prompt, message_placeholder)
         # In response the used papers are stored, get them and build markdown
-        if st.session_state.rag_method == "stuffing":
-            used_papers = get_retreived_papers(response)
-            sources_list = build_used_papers_markdown(used_papers)
-        elif st.session_state.rag_method == "reduction":
-            sources_list = [response.get("context", "")]
+        used_papers = get_retreived_papers(response)
+        sources_list = build_used_papers_markdown(used_papers)
         message_placeholder.markdown(full_response)
 
         # If enabled, display the sources which are expandable

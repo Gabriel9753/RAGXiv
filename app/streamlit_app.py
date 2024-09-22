@@ -9,26 +9,41 @@ if "page_states" not in st.session_state:
     st.session_state.page_states = {}
 
 # --- PAGE SETUP ---
-rag_chat = st.Page(
+rag_chat_page = st.Page(
     "views/rag_chat.py",
     title="RAG Chat",
-    icon=":material/account_circle:",
+    icon=":material/chat:",
     default=True,
 )
-# project_1_page = st.Page(
-#     "views/rag_chat copy.py",
-#     title="Sales Dashboard",
-#     icon=":material/bar_chart:",
-# )
+
+semantic_search_page = st.Page(
+    "views/semantic_search.py",
+    title="Semantic Search",
+    icon=":material/search:",
+)
+
+paper_qa_page = st.Page(
+    "views/paper_qa.py",
+    title="Paper QA",
+    icon=":material/question_mark:",
+)
+
+reference_graph_page = st.Page(
+    "views/reference_graph.py",
+    title="Reference Graph",
+    icon="🧠",
+)
+
 settings_page = st.Page(
     "views/settings.py",
     title="Settings",
     icon=":material/settings:",
 )
 
+st.sidebar.title("RAGXiv")
 
 # --- NAVIGATION SETUP [WITHOUT SECTIONS] ---
-pg = st.navigation(pages=[rag_chat, settings_page])
+pg = st.navigation(pages=[rag_chat_page, semantic_search_page, paper_qa_page, reference_graph_page, settings_page])
 
 # --- NAVIGATION SETUP [WITH SECTIONS]---
 # pg = st.navigation(
@@ -40,10 +55,9 @@ pg = st.navigation(pages=[rag_chat, settings_page])
 
 
 # --- SHARED ON ALL PAGES ---
-st.sidebar.markdown("Made with ❤️ by [Sven](https://youtube.com/@codingisfun)")
-
-# Display the session ID in the sidebar
-# st.sidebar.text(f"Session ID: {st.session_state.session_id}")
 
 # --- RUN NAVIGATION ---
 pg.run()
+
+
+st.sidebar.markdown(":grey-background[Made with 💚 by [Ilyi](https://github.com/ilyii) and [Gabriel](https://github.com/Gabriel9753)]")

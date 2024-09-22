@@ -1,0 +1,62 @@
+[
+    {
+        "question": "Why is scaling the dot product in attention mechanisms necessary, particularly when dealing with large dimensions for queries and keys?",
+        "answer": "Scaling the dot product by the square root of the key dimension prevents the softmax output from becoming saturated, which would result in extremely small gradients and hinder learning."
+    },
+    {
+        "question": "In what way does multi-head attention enhance the model's ability to capture diverse aspects of input sequences compared to a single attention mechanism?",
+        "answer": "Multi-head attention allows the model to focus on different parts of the input sequence simultaneously by projecting the queries, keys, and values into multiple subspaces, which helps capture more nuanced relationships."
+    },
+    {
+        "question": "How does masking in the decoder's self-attention mechanism ensure the autoregressive property of the model during training?",
+        "answer": "The masking prevents each position from attending to subsequent positions, ensuring that predictions for a token depend only on the known outputs at previous positions."
+    },
+    {
+        "question": "Why is the use of positional encoding essential in the architecture, given that the model lacks recurrence and convolution mechanisms?",
+        "answer": "Positional encoding provides the model with information about the order of tokens in a sequence, which is crucial for maintaining the structure of the input in the absence of recurrence or convolution."
+    },
+    {
+        "question": "What is the primary advantage of using self-attention layers over recurrent layers in terms of computational complexity?",
+        "answer": "Self-attention layers have a constant path length and allow for parallel computation, making them more efficient than recurrent layers, which require sequential operations and have a path length proportional to the sequence length."
+    },
+    {
+        "question": "How do feed-forward networks applied at each position in the encoder and decoder differ from typical convolutional or recurrent operations?",
+        "answer": "The feed-forward networks are position-wise, meaning they apply the same transformation independently to each position, whereas convolutional and recurrent layers rely on local context or sequential dependencies, respectively."
+    },
+    {
+        "question": "What role does the shared weight matrix between the embedding and pre-softmax linear transformation layers play in the model's efficiency?",
+        "answer": "Sharing the weight matrix reduces the number of parameters, leading to a more efficient model without sacrificing performance, as it aligns the representation of input and output tokens."
+    },
+    {
+        "question": "How does the use of multiple layers in both the encoder and decoder contribute to the model’s ability to capture complex dependencies in long sequences?",
+        "answer": "Multiple layers enable the model to progressively learn higher-level representations, allowing it to capture complex dependencies over long distances that would be challenging for shallower architectures."
+    },
+    {
+        "question": "Why is it beneficial to use learned projections for queries, keys, and values in multi-head attention rather than using the original input representations?",
+        "answer": "Learned projections enable the model to focus on different aspects of the data in each attention head, leading to more specialized and diverse attention patterns across heads."
+    },
+    {
+        "question": "In what way does limiting self-attention to a local neighborhood improve the model’s performance on tasks with very long sequences?",
+        "answer": "Limiting self-attention to a local neighborhood reduces the computational complexity for long sequences while maintaining a focus on the most relevant portions of the input, improving both efficiency and relevance of attention."
+    },
+    {
+        "question": "How does the choice of sinusoidal positional encodings facilitate generalization to sequences longer than those encountered during training?",
+        "answer": "Sinusoidal positional encodings enable the model to extrapolate to longer sequences by encoding positions in a continuous space, allowing it to infer relative positions beyond the training range."
+    },
+    {
+        "question": "Why are additive attention mechanisms less efficient than dot-product attention, particularly for larger dimensions?",
+        "answer": "Additive attention requires a feed-forward network with a hidden layer, making it computationally slower and less space-efficient than dot-product attention, which can leverage optimized matrix multiplication."
+    },
+    {
+        "question": "What is the rationale for using different parameter matrices for each attention head in multi-head attention?",
+        "answer": "Using different parameter matrices for each attention head allows each head to learn distinct representations of the input, enhancing the model’s capacity to capture varied relationships in the data."
+    },
+    {
+        "question": "How does restricting the receptive field in self-attention to a fixed window size improve computational efficiency without severely degrading performance?",
+        "answer": "Restricting the receptive field reduces the number of positions each token attends to, lowering computational cost while still capturing the most important local dependencies within the window."
+    },
+    {
+        "question": "What advantage does employing ReLU activations in the position-wise feed-forward networks provide for the model?",
+        "answer": "ReLU activations introduce non-linearity, allowing the feed-forward networks to model more complex patterns in the data, while their simplicity ensures computational efficiency during training."
+    }
+]
