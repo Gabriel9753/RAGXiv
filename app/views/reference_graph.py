@@ -101,7 +101,7 @@ if prompt:
             width=1400,
             height=520,
             directed=True,
-            physics=True,
+            physics=False,
             hierarchical=False,
             nodeHighlightBehavior=True,
             highlightColor="#F7A7A6",

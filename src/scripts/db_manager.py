@@ -1,8 +1,11 @@
 from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, Table
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
+from dotenv import load_dotenv
+import os
 
-DATABASE_URL = "postgresql://admin:admin@localhost:5432/metadata_db"
+load_dotenv()
+DATABASE_URL = os.getenv("DATABASE_URL")
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
@@ -17,6 +20,23 @@ author_paper = Table(
 
 
 class PaperMetadata(Base):
+    """
+    Represents the metadata of a research paper.
+
+    Attributes:
+        id (int): The primary key of the paper.
+        arxiv_id (str): The unique arXiv identifier of the paper.
+        semantic_scholar_id (str): The unique Semantic Scholar identifier of the paper.
+        title (str): The title of the paper.
+        super_category (str): The main category of the paper.
+        update_year (int): The year the paper was last updated.
+        reference_count (int): The number of references in the paper.
+        citation_count (int): The number of citations the paper has received.
+        author_count (int): The number of authors of the paper.
+        authors (relationship): Many-to-many relationship with Author.
+        references (relationship): One-to-many relationship with Reference.
+    """
+
     __tablename__ = "papers"
     id = Column(Integer, primary_key=True, index=True)
     arxiv_id = Column(String, unique=True)
@@ -34,6 +54,16 @@ class PaperMetadata(Base):
 
 
 class Author(Base):
+    """
+    Represents an author of research papers.
+
+    Attributes:
+        id (int): The primary key of the author.
+        author_id (str): The unique identifier of the author.
+        name (str): The name of the author.
+        papers (relationship): Many-to-many relationship with PaperMetadata.
+    """
+
     __tablename__ = "authors"
     id = Column(Integer, primary_key=True, index=True)
     author_id = Column(String, unique=True)
@@ -42,6 +72,17 @@ class Author(Base):
 
 
 class Reference(Base):
+    """
+    Represents a reference in a research paper.
+
+    Attributes:
+        id (int): The primary key of the reference.
+        arxiv_id (str): The arXiv ID of the paper containing this reference.
+        cited_semantic_scholar_id (str): The Semantic Scholar ID of the cited paper.
+        title (str): The title of the cited paper.
+        paper (relationship): Many-to-one relationship with PaperMetadata.
+    """
+
     __tablename__ = "references"
     id = Column(Integer, primary_key=True, index=True)
     arxiv_id = Column(String, ForeignKey("papers.arxiv_id"))
@@ -51,13 +92,26 @@ class Reference(Base):
 
 
 def init_db(clear=False):
+    """
+    Initialize the database.
+
+    Args:
+        clear (bool): If True, drops all existing tables before creating new ones.
+    """
     if clear:
         Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
 
 
 class DBManager:
+    """
+    Manages database operations for research papers, authors, and references.
+    """
+
     def __init__(self):
+        """
+        Initialize the DBManager with a new database session.
+        """
         self.session = SessionLocal()
 
     def insert_paper(
@@ -73,6 +127,21 @@ class DBManager:
         authors,
         references,
     ):
+        """
+        Insert a new paper into the database along with its authors and references.
+
+        Args:
+            arxiv_id (str): The arXiv ID of the paper.
+            semantic_scholar_id (str): The Semantic Scholar ID of the paper.
+            title (str): The title of the paper.
+            super_category (str): The main category of the paper.
+            update_year (int): The year the paper was last updated.
+            reference_count (int): The number of references in the paper.
+            citation_count (int): The number of citations the paper has received.
+            author_count (int): The number of authors of the paper.
+            authors (list): List of dictionaries containing author information.
+            references (list): List of dictionaries containing reference information.
+        """
         # first check if the paper already exists
         paper = self.session.query(PaperMetadata).filter(PaperMetadata.arxiv_id == arxiv_id).first()
         if paper:
@@ -109,7 +178,11 @@ class DBManager:
             for reference in references:
                 source_arxiv_id = arxiv_id
                 paper_semantic_scholar_id, reference_title = reference["paperId"], reference["title"]
-                if reference_title is None or paper_semantic_scholar_id is None or paper_semantic_scholar_id in unique_references:
+                if (
+                    reference_title is None
+                    or paper_semantic_scholar_id is None
+                    or paper_semantic_scholar_id in unique_references
+                ):
                     continue
                 unique_references.add(paper_semantic_scholar_id)
                 paper_semantic_scholar_id, reference_title = str(paper_semantic_scholar_id), str(reference_title)
@@ -134,37 +207,63 @@ class DBManager:
         self.session.commit()
 
     def get_metadata_from_arxivid(self, arxiv_id):
+        """
+        Retrieve metadata for a paper given its arXiv ID.
+
+        Args:
+            arxiv_id (str): The arXiv ID of the paper.
+
+        Returns:
+            dict: A dictionary containing the paper's metadata, or None if not found.
+        """
         paper = self.session.query(PaperMetadata).filter(PaperMetadata.arxiv_id == arxiv_id).first()
         if paper:
             return {
-                'arxiv_id': paper.arxiv_id,
-                'semantic_scholar_id': paper.semantic_scholar_id,
-                'title': paper.title,
-                'super_category': paper.super_category,
-                'update_year': paper.update_year,
-                'reference_count': paper.reference_count,
-                'citation_count': paper.citation_count,
-                'author_count': paper.author_count
+                "arxiv_id": paper.arxiv_id,
+                "semantic_scholar_id": paper.semantic_scholar_id,
+                "title": paper.title,
+                "super_category": paper.super_category,
+                "update_year": paper.update_year,
+                "reference_count": paper.reference_count,
+                "citation_count": paper.citation_count,
+                "author_count": paper.author_count,
             }
         return None
 
     def get_authors_from_arxivid(self, arxiv_id):
+        """
+        Retrieve authors for a paper given its arXiv ID.
+
+        Args:
+            arxiv_id (str): The arXiv ID of the paper.
+
+        Returns:
+            list: A list of dictionaries containing author information.
+        """
         paper = self.session.query(PaperMetadata).filter(PaperMetadata.arxiv_id == arxiv_id).first()
         if paper:
-            return [{'author_id': author.author_id, 'name': author.name} for author in paper.authors]
+            return [{"author_id": author.author_id, "name": author.name} for author in paper.authors]
         return []
 
     def get_references_from_arxivid(self, arxiv_id):
+        """
+        Retrieve references for a paper given its arXiv ID.
+
+        Args:
+            arxiv_id (str): The arXiv ID of the paper.
+
+        Returns:
+            list: A list of dictionaries containing reference information.
+        """
         paper = self.session.query(PaperMetadata).filter(PaperMetadata.arxiv_id == arxiv_id).first()
         if paper:
             return [
-                {
-                    'semantic_scholar_id': ref.cited_semantic_scholar_id,
-                    'title': ref.title
-                }
-                for ref in paper.references
+                {"semantic_scholar_id": ref.cited_semantic_scholar_id, "title": ref.title} for ref in paper.references
             ]
         return []
 
     def close(self):
+        """
+        Close the database session.
+        """
         self.session.close()

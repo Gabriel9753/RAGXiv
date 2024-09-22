@@ -6,7 +6,7 @@ class Config:
     paper_dir = rf"{data_dir}\papers"  # path to dir where the papers will be downloaded in
     paper_metadata_path = rf"{data_dir}\papers_metadata.json"  # path to json with additional semantic scholar metadata
     multi_thread_workers = 8
-    device = "cuda"  # device to use for embeddings
+    device = "cpu"  # device to use for embeddings
 
 
 class EDAConfig(Config):

@@ -20,6 +20,18 @@ batch_size = 50
 
 
 def choose_df():
+    """
+    Prompts the user to choose a CSV file from the data directory and loads it into a DataFrame.
+
+    This function lists all CSV files in the data directory, allows the user to choose one by
+    entering a number, and then loads the chosen file into a pandas DataFrame.
+
+    Returns:
+        pandas.DataFrame: The DataFrame containing the data from the chosen CSV file.
+
+    Raises:
+        Exception: If there's an error in file selection or loading.
+    """
     all_csv_files = [f for f in os.listdir(data_dir) if f.endswith(".csv")]
     print("Choose a CSV file by typing the number:")
     for i, f in enumerate(all_csv_files):
@@ -36,6 +48,15 @@ def choose_df():
 
 
 def request_papers(ids):
+    """
+    Sends a request to the Semantic Scholar API to retrieve paper metadata.
+
+    Args:
+        ids (list): A list of paper IDs to request metadata for.
+
+    Returns:
+        dict: The JSON response from the Semantic Scholar API containing paper metadata.
+    """
     r = requests.post(
         semantic_url,
         params={"fields": request_fields},
@@ -45,11 +66,29 @@ def request_papers(ids):
 
 
 def save_papers_data(papers_data):
+    """
+    Saves the retrieved paper metadata to a JSON file.
+
+    Args:
+        papers_data (list): A list of dictionaries containing paper metadata.
+    """
     with open(paper_metadata_path, "w") as f:
         json.dump(papers_data, f, indent=4)
 
 
 def process_df(df):
+    """
+    Processes a DataFrame of papers by requesting metadata from Semantic Scholar in batches.
+
+    This function iterates over the DataFrame in batches, requests metadata for each batch
+    from the Semantic Scholar API, and collects all the results.
+
+    Args:
+        df (pandas.DataFrame): The DataFrame containing paper information.
+
+    Returns:
+        list: A list of dictionaries, each containing metadata for a single paper.
+    """
     papers_data = []
 
     for i in tqdm(range(0, len(df), batch_size)):
@@ -62,6 +101,14 @@ def process_df(df):
 
 
 def main():
+    """
+    Main function to orchestrate the paper metadata retrieval process.
+
+    This function performs the following steps:
+    1. Prompts the user to choose a CSV file with paper information.
+    2. Processes the chosen DataFrame to retrieve metadata from Semantic Scholar.
+    3. Saves the retrieved metadata to a JSON file.
+    """
     paper_df = choose_df()
     papers_data = process_df(paper_df)
     save_papers_data(papers_data)

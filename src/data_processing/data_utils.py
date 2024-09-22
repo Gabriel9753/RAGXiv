@@ -12,6 +12,31 @@ cfg = Config()
 
 
 def load_data(drop_missing=False):
+    """
+    Load and process paper data from CSV and JSON files.
+
+    This function reads paper data from a CSV file and additional metadata from a JSON file,
+    merges them, and performs some data preprocessing.
+
+    Args:
+        drop_missing (bool, optional): If True, drops papers that are not in the additional data.
+                                       Defaults to False.
+
+    Returns:
+        tuple: A tuple containing three elements:
+            - papers_df (pandas.DataFrame): A DataFrame containing merged and processed paper data.
+            - paper_authors (dict): A dictionary mapping arXiv IDs to lists of author information.
+            - paper_references (dict): A dictionary mapping arXiv IDs to lists of reference information.
+
+    Note:
+        - This function assumes the existence of a Config class with specific attributes.
+        - It reads data from files specified in the Config instance.
+        - The function performs various data processing steps, including:
+          * Converting arXiv IDs to strings
+          * Creating PDF file paths
+          * Extracting additional metadata from the JSON file
+          * Merging CSV data with additional metadata
+    """
     papers_df = pd.read_csv(cfg.datapath)
     with open(cfg.paper_metadata_path) as f:
         papers_data = json.load(f)

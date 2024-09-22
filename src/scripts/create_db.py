@@ -1,21 +1,11 @@
 """
-    create db just from online collection (qdrant)
+    create db from csv data where the papers are stored (csv -> postgresql)
+    include authors and references from semantic scholar db
 """
+
 import os
-import shutil
 import sys
-from concurrent.futures import ThreadPoolExecutor, as_completed, ProcessPoolExecutor
-from langchain.schema import Document
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-# from langchain_experimental.text_splitter import SemanticChunker
-from langchain_chroma import Chroma
-from langchain_community.document_loaders import PyPDFLoader
-from langchain_huggingface import HuggingFaceEmbeddings
 from tqdm import tqdm
-import pandas as pd
-from langchain_qdrant import QdrantVectorStore
-from qdrant_client import QdrantClient
-from qdrant_client.http.models import Distance, VectorParams
 from dotenv import load_dotenv
 from db_manager import DBManager, init_db
 
@@ -24,9 +14,11 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from config import IndexConfig
 from data_processing.data_utils import load_data
+
 load_dotenv()
 
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
+
 
 def main():
     cfg = IndexConfig()
@@ -54,11 +46,12 @@ def main():
             citation_count=int(row["citation_count"]),
             author_count=int(row["author_count"]),
             authors=authors,
-            references=references
+            references=references,
         )
 
     print("Finished indexing papers!")
     db_manager.close()
+
 
 if __name__ == "__main__":
     main()

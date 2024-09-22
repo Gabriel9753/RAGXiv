@@ -16,14 +16,44 @@ cfg = Config()
 
 params = {"switchLocale": "y", "siteEntryPassthrough": "true"}
 
+
 def check_if_already_downloaded(id, paper_dir):
+    """
+    Check if a paper with the given ID has already been downloaded.
+
+    Args:
+        id (str): The ID of the paper.
+        paper_dir (str): The directory where papers are stored.
+
+    Returns:
+        bool: True if the paper has been downloaded, False otherwise.
+    """
     if f"{id}.pdf" in os.listdir(paper_dir):
         return True
     else:
         return False
 
+
 @retry(tries=3, delay=1, exceptions=(RequestException, HTTPError))
 def download_paper(row, url_template, paper_dir):
+    """
+    Download a paper and save it as a PDF file.
+
+    This function will retry up to 3 times with a 1-second delay between attempts
+    if a RequestException or HTTPError occurs.
+
+    Args:
+        row (pandas.Series): A row from the DataFrame containing paper information.
+        url_template (str): A template string for the download URL.
+        paper_dir (str): The directory where the paper should be saved.
+
+    Returns:
+        str: The ID of the downloaded paper.
+
+    Raises:
+        RequestException: If there's a problem with the HTTP request.
+        HTTPError: If the HTTP request returns a non-200 status code.
+    """
     id = row["id"]
     if check_if_already_downloaded(id, paper_dir):
         return id
@@ -37,6 +67,15 @@ def download_paper(row, url_template, paper_dir):
 
 
 def checkFile(fullfile):
+    """
+    Check if a PDF file is valid and contains metadata.
+
+    Args:
+        fullfile (str): The full path to the PDF file.
+
+    Returns:
+        bool: True if the file is a valid PDF with metadata, False otherwise.
+    """
     with open(fullfile, "rb") as f:
         try:
             pdf = PdfReader(f)
@@ -50,6 +89,21 @@ def checkFile(fullfile):
 
 
 def verify_files(ids, paper_dir):
+    """
+    Verify the integrity of downloaded PDF files.
+
+    This function checks each PDF file in the paper directory to ensure it's a valid
+    PDF and its ID is in the list of expected IDs.
+
+    Args:
+        ids (list): A list of expected paper IDs.
+        paper_dir (str): The directory containing the PDF files.
+
+    Returns:
+        tuple: A tuple containing two lists:
+            - A list of filenames of corrupted or unexpected PDF files.
+            - A list of IDs corresponding to the corrupted or unexpected files.
+    """
     files = os.listdir(paper_dir)
     corrupted_files = []
     with tqdm(total=len(files), desc="Verifying files") as pbar:
@@ -68,6 +122,16 @@ def verify_files(ids, paper_dir):
 
 
 def get_missing_files(ids, paper_dir):
+    """
+    Identify papers that are missing from the paper directory.
+
+    Args:
+        ids (list): A list of expected paper IDs.
+        paper_dir (str): The directory where papers should be stored.
+
+    Returns:
+        list: A list of IDs for papers that are missing from the paper directory.
+    """
     files = os.listdir(paper_dir)
     missing_files = []
     for id in ids:
@@ -77,6 +141,18 @@ def get_missing_files(ids, paper_dir):
 
 
 def main():
+    """
+    Main function to orchestrate the paper download and verification process.
+
+    This function performs the following steps:
+    1. Loads paper information from a CSV file.
+    2. Downloads papers that haven't been downloaded yet.
+    3. Verifies the integrity of downloaded files.
+    4. Removes corrupted files.
+    5. Updates the CSV file to reflect any changes.
+
+    The function uses concurrent downloads to improve efficiency.
+    """
     cfg = Config()
     csv_path = cfg.datapath
     paper_dir = cfg.paper_dir

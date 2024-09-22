@@ -1,3 +1,4 @@
+import re
 import streamlit as st
 import os
 import sys
@@ -31,6 +32,13 @@ QDRANT_URL = os.getenv("QDRANT_URL")
 
 class PageState:
     def __init__(self, session_id, subpage_name):
+        """
+        Initialize a PageState object.
+
+        Args:
+            session_id (str): The unique identifier for the session.
+            subpage_name (str): The name of the subpage.
+        """
         self.subpage_name = subpage_name
         self.session_id = session_id
         self.messages = []
@@ -40,36 +48,95 @@ class PageState:
         self.cur_model = None
 
     def get_messages(self):
-        return self.messages
+        """
+        Retrieve all messages stored in the PageState.
+
+        Returns:
+            list: A list of message dictionaries.
+        """
 
     def add_message(self, message):
+        """
+        Add a new message to the PageState.
+
+        Args:
+            message (dict): The message to be added.
+        """
         self.messages.append(message)
 
     def clear_messages(self):
+        """
+        Clear all messages from the PageState.
+        """
         self.messages = []
 
     def set_rag_components(self, chain, memory, runnable):
+        """
+        Set the RAG components for the PageState.
+
+        Args:
+            chain: The chain component.
+            memory: The memory component.
+            runnable: The runnable component.
+        """
         self.chain = chain
         self.memory = memory
         self.runnable = runnable
 
     def get_rag_components(self):
+        """
+        Retrieve the RAG components from the PageState.
+
+        Returns:
+            tuple: A tuple containing the chain, memory, and runnable components.
+        """
         return self.chain, self.memory, self.runnable
 
     def set_model(self, model):
+        """
+        Set the current model for the PageState.
+
+        Args:
+            model: The model to be set.
+        """
         self.cur_model = model
 
     def get_model(self):
+        """
+        Retrieve the current model from the PageState.
+
+        Returns:
+            The current model.
+        """
         return self.cur_model
 
 
 @st.cache_resource
 def get_retreiver():
+    """
+    Get a cached retriever instance.
+
+    Returns:
+        Retriever: An instance of the retriever.
+    """
     retriever = load_vectorstore(QDRANT_URL, QDRANT_API_KEY).as_retriever()
     return retriever
 
 
 def get_rag_components(_chain, _model):
+    """
+    Get RAG components based on the specified chain and model.
+
+    Args:
+        _chain (str): The type of chain to use.
+        _model: The model to use.
+
+    Returns:
+        tuple: A tuple containing the chain, memory, and runnable components.
+
+    Raises:
+        ValueError: If an invalid chain type is provided.
+    """
     rag_llm = load_llm(temp=0.3, _model=_model)
     rag_retriever = get_retreiver()
     memory = mem.Memory()
@@ -98,10 +165,22 @@ def get_rag_components(_chain, _model):
 
 @st.cache_resource
 def get_db_manager():
+    """
+    Get a cached instance of the DBManager.
+
+    Returns:
+        DBManager: An instance of the DBManager.
+    """
     return DBManager()
 
 
 def display_previous_messages(session_id):
+    """
+    Display previous messages for a given session.
+
+    Args:
+        session_id (str): The unique identifier for the session.
+    """
     for message in st.session_state.page_states[session_id].get_messages():
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
@@ -112,6 +191,15 @@ def display_previous_messages(session_id):
 
 
 def get_retreived_papers(response):
+    """
+    Extract information about retrieved papers from a response.
+
+    Args:
+        response (dict): The response containing retrieved papers.
+
+    Returns:
+        dict: A dictionary of retrieved papers with their metadata.
+    """
     db_manager = get_db_manager()
     used_papers = defaultdict(dict)
     for doc in response["context"]:
@@ -127,6 +215,15 @@ def get_retreived_papers(response):
 
 
 def build_used_papers_markdown(used_papers):
+    """
+    Build a markdown-formatted list of used papers.
+
+    Args:
+        used_papers (dict): A dictionary of used papers.
+
+    Returns:
+        list: A list of markdown-formatted strings for each paper.
+    """
     papers = list(used_papers.items())[:5]  # Limit to 5 papers
     sources_list = []
 
@@ -141,25 +238,60 @@ def build_used_papers_markdown(used_papers):
 
 
 def get_references(arxiv_id):
+    """
+    Get references for a given arXiv ID.
+
+    Args:
+        arxiv_id (str): The arXiv ID of the paper.
+
+    Returns:
+        list: A list of references for the given paper.
+    """
     db_manager = get_db_manager()
     references = db_manager.get_references_from_arxivid(arxiv_id)
     return references
 
 
 def get_paper_metadata(arxiv_id):
+    """
+    Get metadata for a given arXiv ID.
+
+    Args:
+        arxiv_id (str): The arXiv ID of the paper.
+
+    Returns:
+        dict: Metadata of the paper.
+    """
     db_manager = get_db_manager()
     metadata = db_manager.get_metadata_from_arxivid(arxiv_id)
     return metadata
 
 
 def get_authors(arxiv_id):
+    """
+    Get authors for a given arXiv ID.
+
+    Args:
+        arxiv_id (str): The arXiv ID of the paper.
+
+    Returns:
+        list: A list of authors for the given paper.
+    """
     db_manager = get_db_manager()
     authors = db_manager.get_authors_from_arxivid(arxiv_id)
     return authors
 
 
 def scale_similarities(similarities):
-    """Scale similarities to range [0, 1]"""
+    """
+    Scale similarity values to range [0, 1].
+
+    Args:
+        similarities (dict): A dictionary of similarity values.
+
+    Returns:
+        dict: A dictionary of scaled similarity values.
+    """
     min_sim = min(similarities.values())
     max_sim = max(similarities.values())
     if min_sim == max_sim:
@@ -168,10 +300,31 @@ def scale_similarities(similarities):
 
 
 def cosine_similarity(a, b):
+    """
+    Calculate the cosine similarity between two vectors.
+
+    Args:
+        a (numpy.array): First vector.
+        b (numpy.array): Second vector.
+
+    Returns:
+        float: The cosine similarity between vectors a and b.
+    """
     return dot(a, b) / (norm(a) * norm(b))
 
 
 def get_title_similarity_values(main_title, titles, do_scale=True):
+    """
+    Calculate similarity values between a main title and a list of titles.
+
+    Args:
+        main_title (str): The main title to compare against.
+        titles (list): A list of titles to compare with the main title.
+        do_scale (bool): Whether to scale the similarity values.
+
+    Returns:
+        dict: A dictionary of titles and their similarity values to the main title.
+    """
     embedder = load_embedding()
     title_embeddings = embedder.embed_documents(titles)
     main_title_embedding = embedder.embed_query(main_title)
@@ -187,12 +340,27 @@ def get_title_similarity_values(main_title, titles, do_scale=True):
 
 @st.cache_resource
 def get_qdrant_client():
+    """
+    Get a cached instance of the Qdrant client.
+
+    Returns:
+        tuple: A tuple containing the Qdrant client and collection name.
+    """
     client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
     collection_name = COLLECTION_NAME
     return client, collection_name
 
 
 def get_paper_content(arxiv_id):
+    """
+    Retrieve the content of a paper given its arXiv ID.
+
+    Args:
+        arxiv_id (str): The arXiv ID of the paper.
+
+    Returns:
+        str: The content of the paper.
+    """
     client, collection_name = get_qdrant_client()
     results = client.scroll(
         collection_name,
@@ -206,13 +374,100 @@ def get_paper_content(arxiv_id):
 
 
 def get_similar_papers(prompt):
+    """
+    Find papers similar to a given prompt.
+
+    Args:
+        prompt (str): The prompt to find similar papers for.
+
+    Returns:
+        list: A list of similar papers with their similarity scores.
+    """
     vectorstore = load_vectorstore(QDRANT_URL, QDRANT_API_KEY)
     # retriever = vectorstore.as_retriever()
     response = vectorstore.similarity_search_with_score(prompt, k=5)
     return response
 
+def valid_arxiv_id(arxiv_id):
+    """
+    Check if the arxiv_id is valid.
+
+    Args:
+        arxiv_id (str): The arXiv ID to validate.
+
+    Returns:
+        bool: True if the arXiv ID is valid, False otherwise.
+
+    Note:
+        A valid arXiv ID should match the pattern: YYMM.NNNNN or YYMM.NNNNNvV
+        where YY is the year, MM is the month, NNNNN is a 4 or 5 digit number,
+        and V is an optional version number.
+    """
+    return bool(re.match(r"\d{4}\.\d{4,5}(v\d+)?", arxiv_id))
+
+
+def valid_arxiv_url(arxiv_url):
+    """
+    Check if the arxiv_url is valid.
+
+    Args:
+        arxiv_url (str): The arXiv URL to validate.
+
+    Returns:
+        bool: True if the arXiv URL is valid, False otherwise.
+
+    Note:
+        A valid arXiv URL should start with either 'https://arxiv.org/abs/'
+        or 'https://arxiv.org/pdf/' and end with a valid arXiv ID.
+    """
+    abs_url = "https://arxiv.org/abs/"
+    pdf_url = "https://arxiv.org/pdf/"
+    url_check = arxiv_url.startswith(abs_url) or arxiv_url.startswith(pdf_url)
+    return url_check and valid_arxiv_id(arxiv_url.split("/")[-1])
+
+
+def get_arxiv_id_from_url(arxiv_url):
+    """
+    Extract the arxiv_id from the arxiv_url.
+
+    Args:
+        arxiv_url (str): The arXiv URL to extract the ID from.
+
+    Returns:
+        str: The extracted arXiv ID.
+
+    Note:
+        This function assumes the arXiv ID is the last part of the URL path.
+    """
+    return arxiv_url.split("/")[-1]
+
+
+def build_url(arxiv_id):
+    """
+    Build a full arXiv URL from an arXiv ID.
+
+    Args:
+        arxiv_id (str): The arXiv ID to build the URL for.
+
+    Returns:
+        str: The complete arXiv URL for the abstract page.
+
+    Note:
+        This function constructs a URL for the abstract page on arXiv.org.
+    """
+    return f"https://arxiv.org/abs/{arxiv_id}"
+
 
 def get_predefined_prompt(prompt):
+    """
+    Get a predefined prompt based on the input.
+
+    Args:
+        prompt (str): The input prompt or predefined prompt code.
+
+    Returns:
+        str: The resolved prompt.
+    """
     # some predefined prompts
     if prompt.lower() == "/p1":
         prompt = "What is the method 'Stuffing' used for in a RAG-based chatbot?"

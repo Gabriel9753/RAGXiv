@@ -32,11 +32,6 @@ if st.sidebar.button("Clear chat history"):
 display_previous_messages(session_id)
 
 
-def get_similar(prompt):
-    similar_papers = get_similar_papers(prompt)
-    return similar_papers
-
-
 prompt = st.chat_input("Give me some context to find similar papers")
 # If the user has entered a prompt, chat with the assistant
 if prompt:
@@ -50,7 +45,7 @@ if prompt:
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
         # First just get response
-        similar_papers = get_similar(prompt)
+        similar_papers = get_similar_papers(prompt)
 
         # used_papers = {p[0].metadata["arxiv_id"]: p[1] for p in similar_papers}
         used_papers = defaultdict(list)

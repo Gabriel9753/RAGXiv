@@ -113,12 +113,11 @@ def build_runnable(rag_chain, memory, keys: dict = None):
     )
 
 
-# @observe(name="chat()", as_type="generation")
 def chat(rag, input_message, session_id=None, trace_name="chat()", context=None):
     """Chat with the model using the RAG chain."""
     print(rag)
     langfuse_handler.session_id = session_id
-    langfuse_handler.trace_name = trace_name  # TODO: set trace name
+    langfuse_handler.trace_name = trace_name
     langfuse_handler.user_id = "user"
 
     if session_id is None:

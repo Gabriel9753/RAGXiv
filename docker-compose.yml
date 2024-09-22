@@ -1,51 +1,51 @@
-version: '3.8'
+version: '3.8'  # Specifies the version of Docker Compose file format
+
 services:
   postgres:
-    image: postgres:14
+    image: postgres:14  # Uses PostgreSQL version 14
     environment:
-      POSTGRES_USER: admin  # Change this
-      POSTGRES_PASSWORD: admin  # Change this
-      POSTGRES_DB: metadata_db
+      POSTGRES_USER: admin  # Sets the PostgreSQL user (you should change this)
+      POSTGRES_PASSWORD: admin  # Sets the PostgreSQL password (you should change this)
+      POSTGRES_DB: metadata_db  # Creates a database named metadata_db
     ports:
-      - "5432:5432"  # PostgreSQL runs on port 5432
+      - "5432:5432"  # Maps host port 5432 to container port 5432
     volumes:
-      - ./postgres-data:/var/lib/postgresql/data
+      - ./postgres-data:/var/lib/postgresql/data  # Persists PostgreSQL data on the host machine
 
   metabase:
-    image: metabase/metabase
-    container_name: metabase
+    image: metabase/metabase  # Uses the official Metabase image
+    container_name: metabase  # Names the container 'metabase'
     ports:
-      - "3000:3000"
+      - "3000:3000"  # Maps host port 3000 to container port 3000
     environment:
-      MB_DB_TYPE: postgres
-      MB_DB_DBNAME: metadata_db
-      MB_DB_PORT: 5432
-      MB_DB_USER: admin
-      MB_DB_PASS: admin
-      MB_DB_HOST: postgres
+      MB_DB_TYPE: postgres  # Specifies PostgreSQL as the database type for Metabase
+      MB_DB_DBNAME: metadata_db  # Sets the database name for Metabase
+      MB_DB_PORT: 5432  # Sets the PostgreSQL port
+      MB_DB_USER: admin  # Sets the PostgreSQL user for Metabase (should match POSTGRES_USER)
+      MB_DB_PASS: admin  # Sets the PostgreSQL password for Metabase (should match POSTGRES_PASSWORD)
+      MB_DB_HOST: postgres  # Points to the 'postgres' service as the database host
+
   qdrant:
-    image: qdrant/qdrant:latest
-    restart: always
-    container_name: qdrant
+    image: qdrant/qdrant:latest  # Uses the latest Qdrant image
+    restart: always  # Always restarts the container if it stops
+    container_name: qdrant  # Names the container 'qdrant'
     ports:
-      - 6333:6333
-      - 6334:6334
+      - 6333:6333  # Maps host port 6333 to container port 6333 (REST API)
+      - 6334:6334  # Maps host port 6334 to container port 6334 (GRPC API)
     expose:
-      - 6333
-      - 6334
-      - 6335
+      - 6333  # Exposes port 6333 to other containers
+      - 6334  # Exposes port 6334 to other containers
+      - 6335  # Exposes port 6335 to other containers (cluster communication)
     configs:
-      - source: qdrant_config
-        target: /qdrant/config/production.yaml
+      - source: qdrant_config  # Uses the qdrant_config defined below
+        target: /qdrant/config/production.yaml  # Places the config file in the container
     volumes:
-      - ./qdrant_data:/qdrant/data
+      - ./qdrant_data:/qdrant/data  # Persists Qdrant data on the host machine
 
 configs:
   qdrant_config:
     content: |
       log_level: INFO
 
-
 volumes:
-  postgres-data:
-
+  postgres-data:  # Defines a named volume for PostgreSQL data

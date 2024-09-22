@@ -13,6 +13,15 @@ from config import EDAConfig
 
 
 def setup_font(cfg):
+    """
+    Set up the font for matplotlib plots based on the configuration.
+
+    This function attempts to load a custom font (Fira Sans) or falls back to sans-serif.
+    It also sets global matplotlib parameters for font family and size.
+
+    Args:
+        cfg (EDAConfig): Configuration object containing font settings.
+    """
     if cfg.font_family == "Fira Sans":
         font = load_font("https://github.com/google/fonts/blob/main/ofl/firasans/FiraSans-Regular.ttf?raw=true")
         font = font.get_family()
@@ -26,6 +35,19 @@ def setup_font(cfg):
 
 
 def custom_countplot(df, column, cfg, top_n=None, title=None):
+    """
+    Create and save a custom count plot for a specified column in the DataFrame.
+
+    This function creates a count plot using seaborn, customizes it based on the provided
+    configuration, and saves it as an image file.
+
+    Args:
+        df (pandas.DataFrame): The DataFrame containing the data to plot.
+        column (str): The name of the column to plot.
+        cfg (EDAConfig): Configuration object containing plot settings.
+        top_n (int, optional): If provided, plot only the top n categories.
+        title (str, optional): Custom title for the plot. If None, a default title is used.
+    """
     # Set the style for the plot
     sns.set_theme(style=cfg.plot_style, palette=cfg.color_palette)
 
@@ -71,6 +93,18 @@ def custom_countplot(df, column, cfg, top_n=None, title=None):
 
 
 def custom_histplot(df, column, cfg, title=None):
+    """
+    Create and save a custom histogram plot for a specified column in the DataFrame.
+
+    This function creates a histogram plot using seaborn, customizes it based on the provided
+    configuration, and saves it as an image file.
+
+    Args:
+        df (pandas.DataFrame): The DataFrame containing the data to plot.
+        column (str): The name of the column to plot.
+        cfg (EDAConfig): Configuration object containing plot settings.
+        title (str, optional): Custom title for the plot. If None, a default title is used.
+    """
     # Set the style for the plot
     sns.set_theme(style=cfg.plot_style, palette=cfg.color_palette)
 
@@ -94,6 +128,19 @@ def custom_histplot(df, column, cfg, title=None):
     plt.close()
 
 def custom_wordcloud(df, column, cfg, title=None, remove_stopwords=True):
+    """
+    Create and save a custom word cloud for a specified column in the DataFrame.
+
+    This function creates a word cloud using the WordCloud library, customizes it based on the
+    provided configuration, and saves it as an image file. It can optionally remove stopwords.
+
+    Args:
+        df (pandas.DataFrame): The DataFrame containing the data to plot.
+        column (str): The name of the column to create the word cloud from.
+        cfg (EDAConfig): Configuration object containing plot settings.
+        title (str, optional): Custom title for the plot. If None, a default title is used.
+        remove_stopwords (bool, optional): If True, remove common English stopwords. Defaults to True.
+    """
     from wordcloud import WordCloud
     from collections import Counter
     import matplotlib.pyplot as plt
@@ -132,6 +179,15 @@ def custom_wordcloud(df, column, cfg, title=None, remove_stopwords=True):
     plt.close()
 
 def main():
+    """
+    Main function to orchestrate the Exploratory Data Analysis (EDA) process.
+
+    This function performs the following steps:
+    1. Loads the configuration and sets up the font.
+    2. Loads the paper data.
+    3. Creates various plots (count plots, histograms, and word clouds) for different columns in the data.
+    4. Saves all plots as image files in the specified EDA directory.
+    """
     cfg = EDAConfig()
     setup_font(cfg)
     paper_df, paper_authors, paper_references = load_data(drop_missing=cfg.drop_missing)

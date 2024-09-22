@@ -7,12 +7,14 @@ from st_helpers.streamlit_utils import (
     get_predefined_prompt,
     get_paper_content,
     get_paper_metadata,
+    valid_arxiv_id,
+    valid_arxiv_url,
+    get_arxiv_id_from_url,
+    build_url,
 )
 from rag.utils import chat
 import os
 import hashlib
-
-import re
 
 # create an unique session id for this subpage
 cur_file = os.path.basename(__file__)
@@ -59,28 +61,6 @@ def qa_paper(question, paper_content, message_placeholder):
         message_placeholder.markdown(full_response + "▌")
     message_placeholder.markdown(full_response)
     return full_response, response
-
-
-def valid_arxiv_id(arxiv_id):
-    """Check if the arxiv_id is valid."""
-    return bool(re.match(r"\d{4}\.\d{4,5}(v\d+)?", arxiv_id))
-
-
-def valid_arxiv_url(arxiv_url):
-    """Check if the arxiv_url is valid."""
-    abs_url = "https://arxiv.org/abs/"
-    pdf_url = "https://arxiv.org/pdf/"
-    url_check = arxiv_url.startswith(abs_url) or arxiv_url.startswith(pdf_url)
-    return url_check and valid_arxiv_id(arxiv_url.split("/")[-1])
-
-
-def get_arxiv_id_from_url(arxiv_url):
-    """Extract the arxiv_id from the arxiv_url."""
-    return arxiv_url.split("/")[-1]
-
-
-def build_url(arxiv_id):
-    return f"https://arxiv.org/abs/{arxiv_id}"
 
 
 prompt = st.chat_input("arxiv_id OR arxiv_url @ Your question here")

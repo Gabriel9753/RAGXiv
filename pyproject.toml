@@ -8,6 +8,7 @@ authors = [
         ]
 readme = "README.md"
 repository = "https://github.com/Gabriel9753/summerschool_rag_project"
+package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.11"
@@ -23,15 +24,21 @@ streamlit = "^1.38.0"
 qdrant-client = "^1.11.2"
 psycopg2 = "^2.9.9"
 streamlit-agraph = "^0.0.45"
+langchain-google-genai = "^2.0.0"
+langchain-experimental = "^0.3.0"
 
 
-[tool.poetry.group]
-
-[tool.poetry.group.dev.dependencies]
+[tool.poetry.dev-dependencies]
 pytest = "^7.0"
 black = "^22.1.0"
 flake8 = "^4.0.1"
-
+pypdf2 = "^3.0.1"
+retry = "^0.9.2"
+seaborn = "^0.13.2"
+matplotlib = "^3.9.2"
+pyfonts = "^0.0.1"
+nltk = "^3.9.1"
+wordcloud = "^1.9.3"
 
 
 

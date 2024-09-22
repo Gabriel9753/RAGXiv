@@ -8,6 +8,9 @@ from st_helpers.streamlit_utils import (
     get_predefined_prompt,
     get_paper_content,
     get_authors,
+    get_arxiv_id_from_url,
+    valid_arxiv_id,
+    valid_arxiv_url,
 )
 from rag.utils import chat
 import os
@@ -46,24 +49,6 @@ st.sidebar.markdown(f"`Using model: {st.session_state.page_states[session_id].ge
 
 # Display the chat history for the current session
 display_previous_messages(session_id)
-
-
-def valid_arxiv_id(arxiv_id):
-    """Check if the arxiv_id is valid."""
-    return bool(re.match(r"\d{4}\.\d{4,5}(v\d+)?", arxiv_id))
-
-
-def valid_arxiv_url(arxiv_url):
-    """Check if the arxiv_url is valid."""
-    abs_url = "https://arxiv.org/abs/"
-    pdf_url = "https://arxiv.org/pdf/"
-    url_check = arxiv_url.startswith(abs_url) or arxiv_url.startswith(pdf_url)
-    return url_check and valid_arxiv_id(arxiv_url.split("/")[-1])
-
-
-def get_arxiv_id_from_url(arxiv_url):
-    """Extract the arxiv_id from the arxiv_url."""
-    return arxiv_url.split("/")[-1]
 
 
 def get_summarization(arxiv_id, message_placeholder, full_response):

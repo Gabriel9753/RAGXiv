@@ -7,7 +7,6 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
-from langchain_ollama import OllamaLLM
 from dotenv import load_dotenv
 from tqdm import tqdm
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -15,7 +14,6 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 # Add the src directory to the path
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-from config import IndexConfig
 from data_processing.data_utils import load_data
 
 load_dotenv()
@@ -36,13 +34,16 @@ The format must be:
 Question: ...
 Answer: ..."""
 
+
 def load_pdf(file_path: str) -> List[Document]:
     loader = PyPDFLoader(file_path)
     return loader.load()
 
+
 def extract_content(pdf: List[Document], start_page: int = 3, end_page: int = 10) -> str:
     content = [p.page_content for p in pdf if start_page <= p.metadata["page"] <= end_page]
     return "\n".join(content)
+
 
 def parse_response(response: str) -> Tuple[str, str]:
     parts = response.split("Question: ")
@@ -52,6 +53,7 @@ def parse_response(response: str) -> Tuple[str, str]:
     if len(question_answer) != 2:
         raise ValueError("Invalid response format")
     return question_answer[0].strip(), question_answer[1].strip()
+
 
 def create_qa_chain():
     # llm = OllamaLLM(model="qwen2.5:7b", temperature=0.1)
@@ -65,19 +67,12 @@ def create_qa_chain():
         # other params...
     )
 
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", SYSTEM_TEMPLATE),
-        ("human", "{paper_content}")
-    ])
+    prompt = ChatPromptTemplate.from_messages([("system", SYSTEM_TEMPLATE), ("human", "{paper_content}")])
 
-    chain = (
-        {"paper_content": RunnablePassthrough()}
-        | prompt
-        | llm
-        | StrOutputParser()
-    )
+    chain = {"paper_content": RunnablePassthrough()} | prompt | llm | StrOutputParser()
 
     return chain
+
 
 def process_paper(pdf_path: str, qa_chain) -> Tuple[str, str, str]:
     try:
@@ -92,6 +87,7 @@ def process_paper(pdf_path: str, qa_chain) -> Tuple[str, str, str]:
     except Exception as e:
         print(f"Error processing {pdf_path}: {e}")
         return pdf_path, "", "", ""
+
 
 def main():
     papers_df, _, _ = load_data(drop_missing=True)
@@ -117,6 +113,7 @@ def main():
 
     qa_pairs_df.to_csv(OUT_PATH, index=False, encoding="utf-8")
     print(f"QA pairs saved to {OUT_PATH}")
+
 
 if __name__ == "__main__":
     main()
