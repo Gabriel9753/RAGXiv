@@ -32,7 +32,7 @@ def qa_paper(question, paper_content, message_placeholder):
     full_response = ""
     print(f"Question: {question}")
     print(f"Paper content: {paper_content}")
-    response = chat(runnable, question, session_id)
+    response = chat(runnable, question, session_id, trace_name="qa_paper")
     for chunk in response["answer"].split():
         full_response += chunk + " "
         time.sleep(0.001)

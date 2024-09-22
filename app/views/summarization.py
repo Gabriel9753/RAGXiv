@@ -62,7 +62,7 @@ def get_arxiv_id_from_url(arxiv_url):
 
 def get_summarization(arxiv_id, message_placeholder, full_response):
     full_paper_content = get_paper_content(arxiv_id)
-    summarization = chain.invoke({"input": full_paper_content})
+    summarization = chat(chain, full_paper_content, trace_name="summarization")
     for chunk in summarization.split():
         full_response += chunk + " "
         time.sleep(0.001)

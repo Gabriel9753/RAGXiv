@@ -51,7 +51,7 @@ display_previous_messages(session_id)
 
 def normal_chat(prompt, message_placeholder):
     full_response = ""
-    response = chat(runnable, prompt, session_id)
+    response = chat(runnable, prompt, session_id, trace_name="summarization")
     for chunk in response["answer"].split():
         full_response += chunk + " "
         time.sleep(0.001)
