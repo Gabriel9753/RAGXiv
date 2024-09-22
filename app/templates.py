@@ -82,7 +82,6 @@ SUMMARIZATION_TEMPLATE = """
 
 SUMMARIZATION_PROMPT = ChatPromptTemplate.from_messages(
     [("system", SUMMARIZATION_TEMPLATE),
-     MessagesPlaceholder("chat_history"),
      ("human", "{input}")])
 
 

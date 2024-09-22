@@ -44,7 +44,7 @@ class IndexConfig(Config):
         self.embedding_model_name = "all-mpnet-base-v2"
         # self.qdrant_url = "https://1ed4f85b-722b-4080-97a7-afe8eab7ae7a.europe-west3-0.gcp.cloud.qdrant.io:6333"
         self.qdrant_url = "http://localhost:6333"
-        self.qdrant_path = r"D:\Database\arxiv\qdrant"
+        # self.qdrant_path = r"D:\Database\arxiv\qdrant"
         self.text_splitter_args = [
             {
                 "type": "RecursiveCharacterTextSplitter",

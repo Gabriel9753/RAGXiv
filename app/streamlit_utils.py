@@ -14,12 +14,13 @@ root_dir = os.path.join(os.path.dirname(__file__), "..")
 sys.path.append(root_dir)
 
 from src.scripts.db_manager import DBManager
-import rag
+import utils
+import memory as mem
 from chains import (
     stuff_chain,
     reduce_chain,
     reranker_chain,
-    semantic_search,
+    semantic_search_chain,
     hyde_chain,
     summarization_chain,
     paper_qa_chain,
@@ -53,7 +54,7 @@ def get_rag_components(_chain="stuffing"):
     print(f"Building RAG components for session with chain {_chain}")
     rag_llm = load_llm(temp=0.3)
     rag_retriever = load_vectorstore(QDRANT_URL, QDRANT_API_KEY).as_retriever()
-    memory = rag.Memory()
+    memory = mem.Memory()
 
     chain = None
     if _chain == "stuffing":
@@ -66,25 +67,19 @@ def get_rag_components(_chain="stuffing"):
     elif _chain == "hyde":
         chain = hyde_chain(rag_llm=rag_llm, rag_retriever=rag_retriever)
     elif _chain == "semantic_search":
-        # TODO: Implement semantic search chain
-        pass
-        # chain = semantic_search(rag_llm=rag_llm, rag_retriever=rag_retriever)
+        chain = semantic_search_chain(rag_llm=rag_llm, rag_retriever=rag_retriever)
     elif _chain == "summarization":
         chain = summarization_chain(rag_llm=rag_llm)
     elif _chain == "paper_qa":
-        chain = paper_qa_chain(rag_llm=rag_llm)
+        pass
+        # chain = paper_qa_chain(rag_llm=rag_llm)
     else:
         raise ValueError(f"Invalid chain type: {_chain}")
 
-    runnable = rag.build_runnable(chain, memory)
+    runnable = utils.build_runnable(chain, memory)
     return chain, memory, runnable
 
-    # retriever = load_vectorstore(QDRANT_URL, QDRANT_API_KEY).as_retriever()
-    # chain = rag.build_chain()
-    # memory = rag.Memory()
-    # runnable = rag.build_runnable(chain, memory)
-    # vectorstore = rag.initialize_retriever().vectorstore
-    # return chain, vectorstore, memory, runnable
+
 
 
 @st.cache_resource

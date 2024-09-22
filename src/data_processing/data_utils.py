@@ -23,7 +23,7 @@ def load_data(drop_missing=False):
     paper_authors = dict()
     paper_references = dict()
 
-    for paper in papers_data:
+    for i, paper in enumerate(papers_data):
         if paper is None:
             continue
         semantic_scholar_id = paper["paperId"]

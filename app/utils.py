@@ -4,6 +4,7 @@ from langchain_openai import ChatOpenAI
 from langchain_ollama.llms import OllamaLLM
 from langchain_qdrant import QdrantVectorStore
 from langchain_qdrant import FastEmbedSparse, RetrievalMode
+from langchain_core.runnables import RunnableWithMessageHistory
 
 
 def format_docs(d:dict):
@@ -12,8 +13,6 @@ def format_docs(d:dict):
         res = "\n\n".join([doc.page_content for doc in d])
 
     else:
-        print(d)
-        print(d.keys())
         res = "\n\n".join(
             [doc.page_content for doc in d["context"]]
         )
@@ -46,7 +45,6 @@ def load_vectorstore(qdrant_url:str, qdrant_api_key:str, hybrid:bool=False):
 
     if hybrid:
 
-
         sparse_embeddings = FastEmbedSparse(model_name="Qdrant/bm25")
 
         vs = QdrantVectorStore.from_existing_collection(
@@ -73,3 +71,31 @@ def load_vectorstore(qdrant_url:str, qdrant_api_key:str, hybrid:bool=False):
     return vs
 
 
+def build_runnable(rag_chain, memory, keys: dict = None):
+    """Build a runnable with message history"""
+
+    if keys is None:
+        keys = {"input_messages_key": "input", "history_messages_key": "chat_history", "output_messages_key": "answer"}
+
+    return RunnableWithMessageHistory(
+        rag_chain,
+        memory.get_session_history,
+        input_messages_key=keys["input_messages_key"],
+        history_messages_key=keys["history_messages_key"],
+        output_messages_key=keys["output_messages_key"],
+    )
+
+# @observe(name="chat()", as_type="generation")
+def chat(rag, input_message, session_id, stream=False):
+    """Chat with the model using the RAG chain."""
+    # langfuse_handler = langfuse_context.get_current_langchain_handler()
+
+    response = rag.invoke(
+        {"input": input_message},
+        config={"configurable": {"session_id": session_id}, "callbacks": [langfuse_handler]},
+    )
+
+    # langfuse_context.update_current_observation(
+    #     input=input_message, output=response["answer"], session_id=session_id
+    # )
+    return response

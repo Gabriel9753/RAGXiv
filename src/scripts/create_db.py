@@ -7,7 +7,7 @@ import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed, ProcessPoolExecutor
 from langchain.schema import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_experimental.text_splitter import SemanticChunker
+# from langchain_experimental.text_splitter import SemanticChunker
 from langchain_chroma import Chroma
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -36,7 +36,7 @@ def main():
     print("Indexing papers...")
     print(f"Number of papers: {len(papers_df)}")
 
-    for index, row in papers_df.iterrows():
+    for index, row in tqdm(papers_df.iterrows(), total=len(papers_df)):
         arxiv_id = row["arxiv_id"]
         semantic_scholar_id = row["semantic_scholar_id"]
         # Get authors and references

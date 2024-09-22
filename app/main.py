@@ -5,7 +5,6 @@ from langchain_core.runnables import RunnableWithMessageHistory
 import config
 import utils
 import memory
-import templates
 import chains
 
 load_dotenv()

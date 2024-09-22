@@ -193,7 +193,7 @@ def hyde_chain(rag_llm:Runnable, rag_retriever:VectorStoreRetriever):
 
 
 
-def semantic_search(query:str, rag_llm:Runnable, rag_retriever:VectorStoreRetriever):
+def semantic_search_chain(rag_llm:Runnable, rag_retriever:VectorStoreRetriever):
     """Build Semantic Search chain.
 
     Args:
@@ -215,10 +215,7 @@ def semantic_search(query:str, rag_llm:Runnable, rag_retriever:VectorStoreRetrie
         {"context": rag_retriever, "input": RunnablePassthrough()}
     ).assign(answer=llm_chain)
 
-    response = chain.invoke(query)
-
-    # TODO: Fetch Titles and metadata from metadata sql
-    return response
+    return chain
 
 
 def paper_qa_chain(rag_llm:Runnable):
@@ -233,8 +230,7 @@ def paper_qa_chain(rag_llm:Runnable):
 
 
 def summarization_chain(rag_llm):
-    llm = utils.load_llm(temp=0.3)
     prompt = templates.SUMMARIZATION_PROMPT
-    chain = (prompt | llm | StrOutputParser())
+    chain = (prompt | rag_llm | StrOutputParser())
 
     return chain
