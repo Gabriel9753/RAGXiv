@@ -16,8 +16,12 @@ if session_id not in st.session_state.page_states:
     st.session_state.page_states[session_id] = PageState(session_id, page_name)
     get_rag_components.clear()
 
+st.title(":rainbow[Paper QA]")
+st.markdown("Welcome to the Paper QA! Enter an arXiv ID or URL and ask a question about the paper.")
+st.markdown("Example: `https://arxiv.org/abs/1706.03762 @ What is the main contribution of this paper?`")
+st.markdown("---")
+
 # Get the RAG components (specific chain), depending on the method chosen
-# TODO: Chain for qa
 chain, memory, runnable = get_rag_components(_chain="paper_qa")
 
 # If the user clicks the "Clear chat history" button, clear the chat history
@@ -30,10 +34,8 @@ display_previous_messages(session_id)
 
 def qa_paper(question, paper_content, message_placeholder):
     full_response = ""
-    print(f"Question: {question}")
-    print(f"Paper content: {paper_content}")
-    response = chat(runnable, question, session_id, trace_name="qa_paper")
-    for chunk in response["answer"].split():
+    response = chat(runnable, question, session_id, trace_name="qa_paper", context=paper_content)
+    for chunk in response.split():
         full_response += chunk + " "
         time.sleep(0.001)
         message_placeholder.markdown(full_response + "▌")
@@ -55,6 +57,9 @@ def get_arxiv_id_from_url(arxiv_url):
     """Extract the arxiv_id from the arxiv_url."""
     return arxiv_url.split("/")[-1]
 
+def build_url(arxiv_id):
+    return f"https://arxiv.org/abs/{arxiv_id}"
+
 prompt = st.chat_input("arxiv_id OR arxiv_url @ Your question here")
 # If the user has entered a prompt, chat with the assistant
 if prompt:
@@ -71,15 +76,26 @@ if prompt:
         st.warning("Please provide a valid arxiv_id or arxiv_url")
         st.stop()
 
+    if valid_arxiv_url(arxiv_id):
+        arxiv_id = get_arxiv_id_from_url(arxiv_id)
+
     paper_content = get_paper_content(arxiv_id)
     paper_metadata = get_paper_metadata(arxiv_id)
 
-    user_prompt = f"Paper: :green[{paper_metadata['title']}]\n{question}"
+    if not paper_metadata:
+        st.error("Paper not found in the knowledge base. Please enter a valid arXiv ID or URL.")
+        st.stop()
+
+    if not paper_content:
+        st.error("Paper content not found. Please try again later.")
+        st.stop()
+
+    user_prompt = f"[:green[{paper_metadata['title']}]]({build_url(arxiv_id)})\n{question}"
 
     # Add the user's prompt to the message history and display it
     st.session_state.page_states[session_id].add_message({"role": "user", "content": user_prompt})
     with st.chat_message("user"):
-        st.markdown(user_prompt)
+        st.markdown(user_prompt, unsafe_allow_html=True)
 
     # Display the assistant's response
     with st.chat_message("assistant"):

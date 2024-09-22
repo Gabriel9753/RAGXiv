@@ -20,7 +20,8 @@ from chains import (
     reranker_chain,
     semantic_search_chain,
     hyde_chain,
-    summarization_chain
+    summarization_chain,
+    paper_qa_chain
 )
 from utils import load_vectorstore, load_llm, load_embedding
 
@@ -68,8 +69,7 @@ def get_rag_components(_chain="stuffing"):
     elif _chain == "summarization":
         chain = summarization_chain(rag_llm=rag_llm)
     elif _chain == "paper_qa":
-        pass
-        # chain = paper_qa_chain(rag_llm=rag_llm)
+        chain = paper_qa_chain(rag_llm=rag_llm)
     else:
         raise ValueError(f"Invalid chain type: {_chain}")
 

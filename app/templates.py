@@ -10,6 +10,7 @@ CONTEXTUALIZE_TEMPLATE = """
 QA_TEMPLATE = """
     You are an assistant designed to answer questions based on the provided context.
     Answer the user's question concisely and accurately using the context below.
+    Be short and to the point.
     Use markdown format.
 
     Context: {context}
@@ -19,6 +20,7 @@ QA_TEMPLATE = """
 PAPERQA_TEMPLATE = """
     You are an assistant for answering questions based on academic paper content.
     Use the paper information below to answer the question clearly and concisely.
+    Be short and to the point.
     Use markdown format.
 
     Paper Content: {context}
