@@ -24,13 +24,13 @@ class EDAConfig(Config):
 
         # Other configurations for custom countplot
         self.plot_style = "darkgrid"
-        self.color_palette = "dark"
+        self.color_palette = "deep"  # Better contrast for a dark theme
+        self.primary_color = "#66c2ff"  # Lighter blue matching the bar color
         self.font_size = 12
         self.figure_size = (12, 6)
-        self.primary_color = "skyblue"
         self.title_font_size = 16
         self.label_font_size = 14
-        self.x_tick_rotation = 45
+        self.x_tick_rotation = 0  # Keep ticks horizontal as in your example
         self.dpi = 300
 
 

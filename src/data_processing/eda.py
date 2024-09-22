@@ -28,11 +28,32 @@ def setup_font(cfg):
     else:
         font = "sans-serif"
         cfg.font_family = "sans-serif"
-    # TODO: Currently falling back to sans-serif every time and i dont know why
     print(f"Loaded font family: {font}")
     plt.rcParams["font.family"] = font
     plt.rcParams["font.size"] = cfg.font_size
 
+
+def setup_dark_theme_transparent():
+    """
+    Set up the dark theme with a transparent background for Seaborn and Matplotlib.
+    """
+    sns.set_theme(style="darkgrid", palette="deep")
+
+    # Matplotlib customizations for a dark theme with transparency
+    plt.rcParams.update({
+        "text.color": "white",
+        "axes.labelcolor": "white",
+        "xtick.color": "white",
+        "ytick.color": "white",
+        "axes.facecolor": "none",  # Transparent plot background
+        "axes.edgecolor": "white",
+        "figure.facecolor": "none",  # Transparent figure background
+        "grid.color": "#2a2a2a",  # Darker grid lines
+        "axes.grid": True,
+        "font.size": 12,
+        "legend.facecolor": "none",  # Transparent legend background
+        "savefig.transparent": True,  # Transparent background when saving
+    })
 
 def custom_countplot(df, column, cfg, top_n=None, title=None):
     """
@@ -49,7 +70,8 @@ def custom_countplot(df, column, cfg, top_n=None, title=None):
         title (str, optional): Custom title for the plot. If None, a default title is used.
     """
     # Set the style for the plot
-    sns.set_theme(style=cfg.plot_style, palette=cfg.color_palette)
+    # sns.set_theme(style=cfg.plot_style, palette=cfg.color_palette)
+    setup_dark_theme_transparent()
 
     plt.figure(figsize=cfg.figure_size)
 
@@ -65,14 +87,15 @@ def custom_countplot(df, column, cfg, top_n=None, title=None):
 
     # Customize the plot
     if title is None:
-        plt.title(f"Distribution of {column}", fontsize=cfg.title_font_size)
+        plt.title(f"Distribution of {column}", fontsize=cfg.title_font_size, color="white")
     else:
-        plt.title(title, fontsize=cfg.title_font_size)
-    plt.xlabel(column, fontsize=cfg.label_font_size)
-    plt.ylabel("Count", fontsize=cfg.label_font_size)
+        plt.title(title, fontsize=cfg.title_font_size, color="white")
+    plt.xlabel(column, fontsize=cfg.label_font_size, color="white")
+    plt.ylabel("Count", fontsize=cfg.label_font_size, color="white")
 
     # Rotate x-axis labels if needed
-    plt.xticks(rotation=cfg.x_tick_rotation)
+    plt.xticks(rotation=cfg.x_tick_rotation, color="white")
+    plt.yticks(color="white")
 
     # Add value labels on top of each bar
     for p in ax.patches:
@@ -83,12 +106,13 @@ def custom_countplot(df, column, cfg, top_n=None, title=None):
             va="center",
             xytext=(0, 5),
             textcoords="offset points",
+            color="white"  # Text color for annotation
         )
 
-    # Save the plot
+    # Save the plot with transparency
     plt.tight_layout()
     filename = f'{column}_distribution{"_top_"+str(top_n) if top_n else ""}.png'
-    plt.savefig(os.path.join(cfg.eda_dir, filename), dpi=cfg.dpi, bbox_inches="tight")
+    plt.savefig(os.path.join(cfg.eda_dir, filename), dpi=cfg.dpi, bbox_inches="tight", transparent=True)
     plt.close()
 
 
@@ -105,8 +129,8 @@ def custom_histplot(df, column, cfg, title=None):
         cfg (EDAConfig): Configuration object containing plot settings.
         title (str, optional): Custom title for the plot. If None, a default title is used.
     """
-    # Set the style for the plot
-    sns.set_theme(style=cfg.plot_style, palette=cfg.color_palette)
+    # Apply the dark theme with transparency
+    setup_dark_theme_transparent()
 
     plt.figure(figsize=cfg.figure_size)
 
@@ -115,16 +139,16 @@ def custom_histplot(df, column, cfg, title=None):
 
     # Customize the plot
     if title is None:
-        plt.title(f"Distribution of {column}", fontsize=cfg.title_font_size)
+        plt.title(f"Distribution of {column}", fontsize=cfg.title_font_size, color="white")
     else:
-        plt.title(title, fontsize=cfg.title_font_size)
-    plt.xlabel(column, fontsize=cfg.label_font_size)
-    plt.ylabel("Count", fontsize=cfg.label_font_size)
+        plt.title(title, fontsize=cfg.title_font_size, color="white")
+    plt.xlabel(column, fontsize=cfg.label_font_size, color="white")
+    plt.ylabel("Count", fontsize=cfg.label_font_size, color="white")
 
-    # Save the plot
+    # Save the plot with transparency
     plt.tight_layout()
     filename = f'{column}_distribution.png'
-    plt.savefig(os.path.join(cfg.eda_dir, filename), dpi=cfg.dpi, bbox_inches="tight")
+    plt.savefig(os.path.join(cfg.eda_dir, filename), dpi=cfg.dpi, bbox_inches="tight", transparent=True)
     plt.close()
 
 def custom_wordcloud(df, column, cfg, title=None, remove_stopwords=True):
@@ -146,7 +170,8 @@ def custom_wordcloud(df, column, cfg, title=None, remove_stopwords=True):
     import matplotlib.pyplot as plt
 
     # Set the style for the plot
-    sns.set_theme(style=cfg.plot_style, palette=cfg.color_palette)
+    # sns.set_theme(style=cfg.plot_style, palette=cfg.color_palette)
+    setup_dark_theme_transparent()
 
     plt.figure(figsize=cfg.figure_size)
 
@@ -175,7 +200,7 @@ def custom_wordcloud(df, column, cfg, title=None, remove_stopwords=True):
     # Save the plot
     plt.tight_layout()
     filename = f'{column}_wordcloud.png'
-    plt.savefig(os.path.join(cfg.eda_dir, filename), dpi=cfg.dpi, bbox_inches="tight")
+    plt.savefig(os.path.join(cfg.eda_dir, filename), dpi=cfg.dpi, bbox_inches="tight", transparent=True)
     plt.close()
 
 def main():
