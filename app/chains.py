@@ -3,9 +3,9 @@ from typing import Any
 
 from dotenv import load_dotenv
 from langchain_core.vectorstores import VectorStoreRetriever
+from langchain.chains import create_history_aware_retriever
 from langchain.chains.retrieval import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain.chains.history_aware_retriever import create_history_aware_retriever
 from langchain.chains.combine_documents.map_rerank import MapRerankDocumentsChain
 from langchain.output_parsers.regex import RegexParser
 from langchain.chains.llm import LLMChain
@@ -23,44 +23,36 @@ import templates
 def stuff_chain(rag_llm:Runnable, rag_retriever:VectorStoreRetriever):
     """Build a runnable with message history"""
 
-    # # History-aware retriever
-    # # Contextualizes the user input based on the chat history for the retrieval
-    # retrieve_documents = RunnableBranch(
-    # (
-    #     # Both empty string and empty list evaluate to False
-    #     lambda x: not x.get("chat_history", False),
-    #     # If no chat history, then we just pass input to retriever
-    #     (lambda x: x["input"]) | rag_retriever,
-    # ),
-    # # If chat history, then we pass inputs to LLM chain, then to retriever
-    #     templates.CONTEXTUALIZE_PROMPT | rag_llm | StrOutputParser() | rag_retriever)
+    retrieve_documents = RunnableBranch(
+    (
+        # Both empty string and empty list evaluate to False
+        lambda x: not x.get("chat_history", False),
+        # If no chat history, then we just pass input to retriever
+        (lambda x: x["input"]) | rag_retriever,
+    ),
+    # If chat history, then we pass inputs to LLM chain, then to retriever
+        templates.CONTEXTUALIZE_PROMPT | rag_llm | StrOutputParser() | rag_retriever)
 
-    # # return retrieve_documents
 
-    # # Stuff documents chain
-    # # "Stuffs" or inputs the documents with the final prompt for the LLM
-    # question_answer_chain = (
-    #     RunnablePassthrough.assign(context=utils.format_docs)
-    #     | templates.QA_PROMPT
-    #     | rag_llm
-    #     | StrOutputParser()
-    # )
-
-    # # RAG chain
-    # # Combines the history-aware retriever and the question-answer chain
-    # retrieval_chain = (
-    #     RunnablePassthrough.assign(
-    #         context=retrieve_documents
-    #     )#.assign(answer=question_answer_chain)
-    # )
-
-    # return retrieval_chain
-    history_aware_retriever = create_history_aware_retriever(
-    rag_llm, rag_retriever, templates.CONTEXTUALIZE_PROMPT
+    # Stuff documents chain
+    # "Stuffs" or inputs the documents with the final prompt for the LLM
+    question_answer_chain = (
+        RunnablePassthrough.assign(context=utils.format_docs)
+        | templates.QA_PROMPT
+        | rag_llm
+        | StrOutputParser()
     )
-    question_answer_chain = create_stuff_documents_chain(rag_llm, templates.QA_PROMPT)
-    rag_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)
-    return rag_chain
+
+    # RAG chain
+    # Combines the history-aware retriever and the question-answer chain
+    retrieval_chain = (
+        RunnablePassthrough.assign(
+            context=retrieve_documents
+        ).assign(answer=question_answer_chain)
+    )
+
+    return retrieval_chain
+
 
 
 
@@ -130,29 +122,75 @@ def reranker(rag_retriever):
     )
     return compression_retriever
 
-def reranker_chain(rag_llm):
+def reranker_chain(rag_llm, rag_retriever):
 
-    output_parser = RegexParser(
-        regex=r"(.*?)\nScore: (.*)",
-        output_keys=["answer", "score"],
+    reranking_retriever = reranker(rag_retriever)
+    retrieve_documents = RunnableBranch(
+    (
+        # Both empty string and empty list evaluate to False
+        lambda x: not x.get("chat_history", False),
+        # If no chat history, then we just pass input to retriever
+        (lambda x: x["input"]) | reranking_retriever,
+    ),
+    # If chat history, then we pass inputs to LLM chain, then to retriever
+        templates.CONTEXTUALIZE_PROMPT | rag_llm | StrOutputParser() | reranking_retriever)
+
+
+    # Stuff documents chain
+    # "Stuffs" or inputs the documents with the final prompt for the LLM
+    question_answer_chain = (
+        RunnablePassthrough.assign(context=utils.format_docs)
+        | templates.QA_PROMPT
+        | rag_llm
+        | StrOutputParser()
     )
-    prompt_template = (
-        "Provide an answer of the question {input}. Output both your answer and a score of how confident "
-        "you are. Context: {context}"
+
+    # RAG chain
+    # Combines the history-aware retriever and the question-answer chain
+    retrieval_chain = (
+        RunnablePassthrough.assign(
+            context=retrieve_documents
+        ).assign(answer=question_answer_chain)
     )
-    prompt = PromptTemplate(
-        template=prompt_template,
-        input_variables=["context"],
-        output_parser=output_parser,
+
+    return retrieval_chain
+
+
+def hyde_chain(rag_llm:Runnable, rag_retriever:VectorStoreRetriever):
+    """Build Hypothetical Document Embedding chain.
+
+    Args:
+        rag_llm (Runnable): The LLM for RAG.
+        rag_retriever (VectorStoreRetriever): The retriever for RAG.
+
+    Returns:
+        Runnable: The runnable for the hypothetical document embedding.
+    """
+
+    retrieve_documents = RunnableBranch(
+    (
+        lambda x: not x.get("chat_history", False),
+        (lambda x: x["input"]) | rag_retriever,
+    ),
+        templates.HYDE_PROMPT | rag_llm | StrOutputParser() | rag_retriever)
+
+
+    question_answer_chain = (
+        RunnablePassthrough.assign(context=utils.format_docs)
+        | templates.QA_PROMPT
+        | rag_llm
+        | StrOutputParser()
     )
-    llm_chain = LLMChain(llm=rag_llm, prompt=prompt)
-    chain = MapRerankDocumentsChain(
-        llm_chain=llm_chain,
-        document_variable_name="context",
-        rank_key="score",
-        answer_key="answer",
+
+    retrieval_chain = (
+        RunnablePassthrough.assign(
+            context=retrieve_documents
+        ).assign(answer=question_answer_chain)
     )
-    return chain
+
+    return retrieval_chain
+
+
 
 
 def semantic_search(query:str, rag_llm:Runnable, rag_retriever:VectorStoreRetriever):
@@ -183,3 +221,20 @@ def semantic_search(query:str, rag_llm:Runnable, rag_retriever:VectorStoreRetrie
     return response
 
 
+def paper_qa_chain(rag_llm:Runnable):
+    # Not fixed yet
+
+    llm = utils.load_llm(temp=0.3)
+    prompt = templates.PAPERQA_PROMPT
+    chain = (prompt | llm)
+
+    return chain
+
+
+
+def summarization_chain(rag_llm):
+    llm = utils.load_llm(temp=0.3)
+    prompt = templates.SUMMARIZATION_PROMPT
+    chain = (prompt | llm | StrOutputParser())
+
+    return chain
