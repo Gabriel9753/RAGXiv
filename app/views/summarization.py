@@ -28,6 +28,10 @@ if session_id not in st.session_state.page_states:
     st.session_state.page_states[session_id] = PageState(session_id, page_name)
     get_rag_components.clear()
 
+st.title(":rainbow[Summarization]")
+st.markdown("Welcome to the Summarization! Enter an arXiv ID or URL to get a summary of the paper.")
+st.markdown("The paper has to be in the knowledge base!")
+st.markdown("---")
 chain, memory, runnable = get_rag_components(_chain="summarization")
 
 # If the user clicks the "Clear chat history" button, clear the chat history
@@ -75,6 +79,9 @@ if prompt:
         st.error("Invalid arXiv ID or URL. Please enter a valid arXiv ID or URL.")
         st.stop()
     paper_meta = get_paper_metadata(arxiv_id)
+    if not paper_meta:
+        st.error("Paper not found in the knowledge base. Please enter a valid arXiv ID or URL.")
+        st.stop()
     paper_authors = get_authors(arxiv_id)
     paper_authors = [a.get("name", "") for a in paper_authors]
     author_str = paper_authors[0] if len(paper_authors) == 1 else f"{paper_authors[0]} et al."

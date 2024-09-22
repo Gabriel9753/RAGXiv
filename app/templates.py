@@ -1,97 +1,109 @@
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
+# Reformulate user questions in the context of previous conversations
+CONTEXTUALIZE_TEMPLATE = """
+    Given the ongoing conversation and the most recent user question, reformulate the question
+    so that it can be understood without the chat history.
+"""
 
-CONTEXTUALIZE_TEMPLATE = (
-    "Given a chat history and the latest user question, \
-    reformulate the question to be understood independently."
-)
-QA_TEMPLATE = (
-    "You are an assistant for question-answering tasks. \
-    Use the provided context to answer the question concisely.\n\n \
-    Context: {context}"
-)
+# Use concise language for question-answering tasks
+QA_TEMPLATE = """
+    You are an assistant designed to answer questions based on the provided context.
+    Answer the user's question concisely and accurately using the context below.
+    Use markdown format.
 
+    Context: {context}
+"""
+
+# Paper-specific question-answering
+PAPERQA_TEMPLATE = """
+    You are an assistant for answering questions based on academic paper content.
+    Use the paper information below to answer the question clearly and concisely.
+    Use markdown format.
+
+    Paper Content: {context}
+"""
+
+# Reformulate a user question based on chat history
 CONTEXTUALIZE_PROMPT = ChatPromptTemplate.from_messages(
-    [("system", CONTEXTUALIZE_TEMPLATE), MessagesPlaceholder("chat_history"), ("human", "{input}")]
+    [
+        ("system", CONTEXTUALIZE_TEMPLATE),
+        MessagesPlaceholder("chat_history"),
+        ("human", "{input}")
+    ]
 )
 
+# General question-answering prompt
 QA_PROMPT = ChatPromptTemplate.from_messages(
-    [("system", QA_TEMPLATE), MessagesPlaceholder("chat_history"), ("human", "{input}")]
+    [
+        ("system", QA_TEMPLATE),
+        MessagesPlaceholder("chat_history"),
+        ("human", "{input}")
+    ]
 )
 
-
-CONTEXTUALIZE_TEMPLATE = (
-    "Given a chat history and the latest user question, \
-    reformulate the question to be understood independently."
-)
-QA_TEMPLATE = (
-    "You are an assistant for question-answering tasks. \
-    Use the provided context to answer the question concisely.\n\n \
-    Context: {context}"
-)
-
-PAPERQA_TEMPLATE = (
-    "You are an assistant for question-answering tasks. \
-    Use the provided paper content to answer the question concisely.\n\n \
-    Paper Content: \n\n{context}"
-)
-
-CONTEXTUALIZE_PROMPT = ChatPromptTemplate.from_messages(
-    [("system", CONTEXTUALIZE_TEMPLATE),
-    MessagesPlaceholder("chat_history"),
-    ("human", "{input}")]
-)
-
-QA_PROMPT = ChatPromptTemplate.from_messages(
-    [("system", QA_TEMPLATE),
-    MessagesPlaceholder("chat_history"),
-    ("human", "{input}")]
-)
-
+# Document merging prompt
 COMBINE_PROMPT = ChatPromptTemplate.from_messages(
-    [("system", "Provide a ombine the following documents into a single document: {context}."),
+    [
+        ("system", "Combine the following documents into a cohesive summary: {context}."),
         MessagesPlaceholder("chat_history"),
-        ("human", "{input}")]
+        ("human", "{input}")
+    ]
 )
 
+# Collapsing context into a shorter form
 COLLAPSE_PROMPT = ChatPromptTemplate.from_messages(
-    [("system", "Provide the context in a collapsed, precise form: \n\n{context}."),
+    [
+        ("system", "Summarize the following context into a concise, clear form:\n\n{context}."),
         MessagesPlaceholder("chat_history"),
-        ("human", "{input}")]
-
+        ("human", "{input}")
+    ]
 )
 
+# Semantic search introduction
 SEMANTIC_SEARCH_PROMPT = ChatPromptTemplate.from_messages(
-    [("system", "Retrieve documents related to the following query. As an answer, provide a short introduction to the retrieved documents: {context}."),
-        ("human", "Query: {input}")]
+    [
+        (
+            "system",
+            "Use markdown format. Retrieve and summarize the documents related to the following query. Provide a brief introduction to the relevant documents:\n\n{context}.",
+        ),
+        ("human", "Query: {input}")
+    ]
 )
 
+# Paper-specific question-answering with academic content
 PAPERQA_PROMPT = ChatPromptTemplate.from_messages(
-    [("system", PAPERQA_TEMPLATE),
-    MessagesPlaceholder("chat_history"),
-    ("human", "{input}")]
+    [
+        ("system", PAPERQA_TEMPLATE),
+        MessagesPlaceholder("chat_history"),
+        ("human", "{input}")
+    ]
 )
 
+# Academic paper summarization prompt
 SUMMARIZATION_TEMPLATE = """
-    Summarize the following academic paper from arXiv, focusing on the key points and contributions. Include a brief overview of the problem the paper addresses, the methods used, the main findings, and any conclusions or implications. Aim to condense the content while maintaining accuracy and clarity. Use clear and concise language, avoiding technical jargon when possible.
+    Use markdown format.
+    Summarize the following academic paper from arXiv, highlighting the key points and contributions.
+    Include an overview of the problem addressed, methods used, main findings, and conclusions.
+    The summary should be clear, concise, and free of excessive technical jargon.
 
-    Here is the paper content:
-
-    {input}
-    """
+    Paper Content: {input}
+"""
 
 SUMMARIZATION_PROMPT = ChatPromptTemplate.from_messages(
-    [("system", SUMMARIZATION_TEMPLATE),
-     ("human", "{input}")])
+    [("system", SUMMARIZATION_TEMPLATE), ("human", "{input}")]
+)
 
-
+# Hypothetical document creation for question answering
 HYDE_TEMPLATE = """
-    Given the chat history and the latest user question, answer the question by providing a
-    hypothetical document that represents the user's query. Use the chat history to provide context.
-    """
+    Based on the conversation history and the latest question, generate a hypothetical document
+    that would represent an ideal response to the user's query, using the chat history for context.
+"""
 
 HYDE_PROMPT = ChatPromptTemplate.from_messages(
-    [("system", HYDE_TEMPLATE),
-     MessagesPlaceholder("chat_history"),
-     ("human", "{input}")]
+    [
+        ("system", HYDE_TEMPLATE),
+        MessagesPlaceholder("chat_history"),
+        ("human", "{input}")
+    ]
 )

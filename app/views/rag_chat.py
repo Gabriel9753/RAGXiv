@@ -13,6 +13,7 @@ session_id = hashlib.md5(page_name.encode()).hexdigest()
 # Initialize session state
 if session_id not in st.session_state.page_states:
     st.session_state.page_states[session_id] = PageState(session_id, page_name)
+    get_rag_components.clear()
 if "rag_method" not in st.session_state:
     st.session_state.rag_method = "stuffing"
 

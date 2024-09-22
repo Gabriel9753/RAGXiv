@@ -24,6 +24,11 @@ session_id = hashlib.md5(page_name.encode()).hexdigest()
 if session_id not in st.session_state.page_states:
     st.session_state.page_states[session_id] = PageState(session_id, page_name)
 
+st.title(":rainbow[Reference Graph]")
+st.markdown("Welcome to the Reference Graph! Enter an arXiv ID or URL to see the reference graph of the paper.")
+st.markdown("In the sidebar, you can clear the chat history.")
+st.markdown("---")
+
 # If the user clicks the "Clear chat history" button, clear the chat history
 if st.sidebar.button("Clear chat history"):
     st.session_state.page_states[session_id].clear_messages()

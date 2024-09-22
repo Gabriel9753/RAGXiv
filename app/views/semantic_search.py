@@ -1,6 +1,8 @@
+from collections import defaultdict
 import time
+import numpy as np
 import streamlit as st
-from streamlit_utils import get_rag_components, PageState, get_retreived_papers, build_used_papers_markdown, display_previous_messages, get_predefined_prompt
+from streamlit_utils import get_rag_components, PageState, get_retreived_papers, build_used_papers_markdown, display_previous_messages, get_predefined_prompt, get_similar_papers, get_paper_metadata, get_title_similarity_values
 from utils import chat
 import os
 import hashlib
@@ -14,27 +16,20 @@ session_id = hashlib.md5(page_name.encode()).hexdigest()
 if session_id not in st.session_state.page_states:
     st.session_state.page_states[session_id] = PageState(session_id, page_name)
 
-# Get the RAG components (specific chain), depending on the method chosen
-# TODO: Add missing chains
-chain, memory, runnable = get_rag_components()#_chain="similar")
+st.title(":rainbow[Sematic Search]")
+st.markdown("Welcome to the Semantic Search! Just type in some context and I will find similar papers for you.")
+st.markdown("---")
 
 # If the user clicks the "Clear chat history" button, clear the chat history
 if st.sidebar.button("Clear chat history"):
     st.session_state.page_states[session_id].clear_messages()
-    memory.clear()
 
 # Display the chat history for the current session
 display_previous_messages(session_id)
 
-def get_similar(prompt, message_placeholder):
-    full_response = ""
-    response = chat(runnable, prompt, session_id)
-    for chunk in response["answer"].split():
-        full_response += chunk + " "
-        time.sleep(0.001)
-        message_placeholder.markdown(full_response + "▌")
-    message_placeholder.markdown(full_response)
-    return full_response, response
+def get_similar(prompt):
+    similar_papers = get_similar_papers(prompt)
+    return similar_papers
 
 prompt = st.chat_input("Give me some context to find similar papers")
 # If the user has entered a prompt, chat with the assistant
@@ -49,18 +44,19 @@ if prompt:
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
         # First just get response
-        full_response, response = get_similar(prompt, message_placeholder)
-        # In response the used papers are stored, get them and build markdown
-        used_papers = get_retreived_papers(response)
-        sources_list = build_used_papers_markdown(used_papers)
-        message_placeholder.markdown(full_response)
+        similar_papers = get_similar(prompt)
 
-        # If enabled, display the sources which are expandable
-        if st.session_state.get('show_sources', True):
-            with st.expander("Sources", expanded=False):
-                for source in sources_list:
-                    st.markdown(source)
+        # used_papers = {p[0].metadata["arxiv_id"]: p[1] for p in similar_papers}
+        used_papers = defaultdict(list)
+        for p in similar_papers:
+            used_papers[p[0].metadata["arxiv_id"]].append(p[1])
+        used_papers_scores = {p: round(np.mean(sims), 2) for p, sims in used_papers.items()}
+        used_papers_titles = {p: get_paper_metadata(p)["title"] for p in used_papers}
+        used_papers = "\n".join([f"- [{used_papers_titles[p]}](https://arxiv.org/abs/{p}) (Similarity: {used_papers_scores[p]})" for p in used_papers])
+        sim_paper_md = f"Here are some papers that are similar to the context you provided: \n{used_papers}"
+
+        message_placeholder.markdown(sim_paper_md)
 
         # Add the response and sources to the message history
-        message = {"role": "assistant", "content": full_response, "sources": sources_list}
+        message = {"role": "assistant", "content": sim_paper_md}
         st.session_state.page_states[session_id].add_message(message)

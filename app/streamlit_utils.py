@@ -1,6 +1,4 @@
-import time
 import streamlit as st
-import uuid
 import os
 import sys
 from collections import defaultdict
@@ -22,8 +20,7 @@ from chains import (
     reranker_chain,
     semantic_search_chain,
     hyde_chain,
-    summarization_chain,
-    paper_qa_chain,
+    summarization_chain
 )
 from utils import load_vectorstore, load_llm, load_embedding
 
@@ -78,8 +75,6 @@ def get_rag_components(_chain="stuffing"):
 
     runnable = utils.build_runnable(chain, memory)
     return chain, memory, runnable
-
-
 
 
 @st.cache_resource
@@ -137,6 +132,7 @@ def get_paper_metadata(arxiv_id):
     metadata = db_manager.get_metadata_from_arxivid(arxiv_id)
     return metadata
 
+
 def get_authors(arxiv_id):
     db_manager = get_db_manager()
     authors = db_manager.get_authors_from_arxivid(arxiv_id)
@@ -188,6 +184,13 @@ def get_paper_content(arxiv_id):
     )[0]
     content = " ".join([doc.payload["page_content"] for doc in results])
     return content
+
+
+def get_similar_papers(prompt):
+    vectorstore = load_vectorstore(QDRANT_URL, QDRANT_API_KEY)
+    # retriever = vectorstore.as_retriever()
+    response = vectorstore.similarity_search_with_score(prompt, k=5)
+    return response
 
 
 def get_predefined_prompt(prompt):
