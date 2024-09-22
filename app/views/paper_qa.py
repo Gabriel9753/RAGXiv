@@ -14,20 +14,29 @@ session_id = hashlib.md5(page_name.encode()).hexdigest()
 # Initialize session state
 if session_id not in st.session_state.page_states:
     st.session_state.page_states[session_id] = PageState(session_id, page_name)
-    get_rag_components.clear()
+    chain, memory, runnable = get_rag_components(_chain="paper_qa", _model=st.session_state.llm)
+    st.session_state.page_states[session_id].set_rag_components(chain, memory, runnable)
+    st.session_state.page_states[session_id].set_model(st.session_state.llm)
+
+# check if the model is set
+if st.session_state.llm != st.session_state.page_states[session_id].get_model():
+    st.session_state.page_states[session_id].set_model(st.session_state.llm)
+    chain, memory, runnable = get_rag_components(_chain=st.session_state.rag_method, _model=st.session_state.llm)
+    st.session_state.page_states[session_id].set_rag_components(chain, memory, runnable)
+
+chain, memory, runnable = st.session_state.page_states[session_id].get_rag_components()
 
 st.title(":rainbow[Paper QA]")
 st.markdown("Welcome to the Paper QA! Enter an arXiv ID or URL and ask a question about the paper.")
 st.markdown("Example: `https://arxiv.org/abs/1706.03762 @ What is the main contribution of this paper?`")
 st.markdown("---")
 
-# Get the RAG components (specific chain), depending on the method chosen
-chain, memory, runnable = get_rag_components(_chain="paper_qa")
-
 # If the user clicks the "Clear chat history" button, clear the chat history
 if st.sidebar.button("Clear chat history"):
     st.session_state.page_states[session_id].clear_messages()
     memory.clear()
+
+st.sidebar.markdown(f"`Using model: {st.session_state.page_states[session_id].get_model()}`")
 
 # Display the chat history for the current session
 display_previous_messages(session_id)

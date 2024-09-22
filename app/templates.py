@@ -11,7 +11,6 @@ QA_TEMPLATE = """
     You are an assistant designed to answer questions based on the provided context.
     Answer the user's question concisely and accurately using the context below.
     Be short and to the point.
-    Use markdown format.
 
     Context: {context}
 """
@@ -21,7 +20,6 @@ PAPERQA_TEMPLATE = """
     You are an assistant for answering questions based on academic paper content.
     Use the paper information below to answer the question clearly and concisely.
     Be short and to the point.
-    Use markdown format.
 
     Paper Content: {context}
 """
@@ -67,7 +65,7 @@ SEMANTIC_SEARCH_PROMPT = ChatPromptTemplate.from_messages(
     [
         (
             "system",
-            "Use markdown format. Retrieve and summarize the documents related to the following query. Provide a brief introduction to the relevant documents:\n\n{context}.",
+            "Retrieve and summarize the documents related to the following query. Provide a brief introduction to the relevant documents:\n\n{context}.",
         ),
         ("human", "Query: {input}")
     ]
@@ -84,7 +82,6 @@ PAPERQA_PROMPT = ChatPromptTemplate.from_messages(
 
 # Academic paper summarization prompt
 SUMMARIZATION_TEMPLATE = """
-    Use markdown format.
     Summarize the following academic paper from arXiv, highlighting the key points and contributions.
     Include an overview of the problem addressed, methods used, main findings, and conclusions.
     The summary should be clear, concise, and free of excessive technical jargon.

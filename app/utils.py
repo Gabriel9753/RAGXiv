@@ -6,59 +6,65 @@ from langchain_ollama.llms import OllamaLLM
 from langchain_qdrant import QdrantVectorStore
 from langchain_qdrant import FastEmbedSparse, RetrievalMode
 from langchain_core.runnables import RunnableWithMessageHistory
-
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langfuse import Langfuse
 from dotenv import load_dotenv
 
 import config
 
 load_dotenv()
-LANGFUSE_SK = os.getenv("LANGFUSE_SECRET_KEY")
-LANGFUSE_PK = os.getenv("LANGFUSE_PUBLIC_KEY")
-LANGFUSE_HOST = os.getenv("LANGFUSE_HOST")
-
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 from langfuse.callback import CallbackHandler
+
 langfuse_handler = CallbackHandler(
-    public_key="pk-lf-511559ed-00fd-481a-8420-790b81c1ec68",
-    secret_key="sk-lf-206a2a34-bbe4-4a4a-a59b-03c3dfede878",
-    host="https://cloud.langfuse.com",
+    public_key=os.getenv("LANGFUSE_PUBLIC_KEY"),
+    secret_key=os.getenv("LANGFUSE_SECRET_KEY"),
+    host=os.getenv("LANGFUSE_HOST"),
 )
 
+# print("Langfuse available:", langfuse_handler.auth_check())
 
 
-print("Langfuse available:", langfuse_handler.auth_check())
-
-
-def format_docs(d:dict):
+def format_docs(d: dict):
     """Formats the documents for prompt generation."""
     if isinstance(d, list):
         res = "\n\n".join([doc.page_content for doc in d])
 
     else:
-        res = "\n\n".join(
-            [doc.page_content for doc in d["context"]]
-        )
+        res = "\n\n".join([doc.page_content for doc in d["context"]])
     return res
 
 
-def load_llm(temp:float=0.3):
+def load_llm(temp: float = 0.3, _model=None):
     """Initialize and return the LLM based on the configured type."""
-    if config.LLM_TYPE == "lm-studio":
+    if "lm-studio" in _model:
         return ChatOpenAI(openai_api_base="http://localhost:5000/v1", openai_api_key="lm-studio", temperature=temp)
-    elif config.LLM_TYPE == "ollama":
+    elif "ollama/qwen2.5:7b" == _model:
+        return OllamaLLM(model="qwen2.5:7b", temperature=temp)
+    elif "ollama/llama3.1:8b" == _model:
         return OllamaLLM(model="llama3.1:8b", temperature=temp)
+    elif "gemini-1.5-flash" == _model and GEMINI_API_KEY:
+        try:
+            return ChatGoogleGenerativeAI(
+                model="gemini-1.5-flash",
+                temperature=temp,
+                api_key=GEMINI_API_KEY,
+                max_tokens=1000,
+                max_retries=2,
+            )
+        except Exception as e:
+            raise Exception(f"Error loading the model: {e}")
     else:
         raise NotImplementedError(f"LLM type {config.LLM_TYPE} is not supported yet.")
 
 
 def load_embedding():
     """Returns the embedding function based on the configuration."""
-    return HuggingFaceEmbeddings(model_name=config.EMBEDDING_MODEL_NAME,
-                                 model_kwargs={"device": "cpu"})
+    return HuggingFaceEmbeddings(model_name=config.EMBEDDING_MODEL_NAME, model_kwargs={"device": "cpu"})
 
 
-def load_vectorstore(qdrant_url:str, qdrant_api_key:str, hybrid:bool=False):
+def load_vectorstore(qdrant_url: str, qdrant_api_key: str, hybrid: bool = False):
     """
     Initialize the retriever using the HuggingFace embeddings and Qdrant vectorstore.
     Returns:
@@ -108,11 +114,13 @@ def build_runnable(rag_chain, memory, keys: dict = None):
         output_messages_key=keys["output_messages_key"],
     )
 
+
 # @observe(name="chat()", as_type="generation")
-def chat(rag, input_message, session_id=None, trace_name="chat()", context = None):
+def chat(rag, input_message, session_id=None, trace_name="chat()", context=None):
     """Chat with the model using the RAG chain."""
-    langfuse_handler.session_id=session_id
-    langfuse_handler.trace_name =trace_name #TODO: set trace name
+    print(rag)
+    langfuse_handler.session_id = session_id
+    langfuse_handler.trace_name = trace_name  # TODO: set trace name
     langfuse_handler.user_id = "user"
 
     if session_id is None:
@@ -120,18 +128,9 @@ def chat(rag, input_message, session_id=None, trace_name="chat()", context = Non
     else:
         config = {"configurable": {"session_id": session_id}, "callbacks": [langfuse_handler]}
 
-
     if context:
-        response = rag.invoke(
-            {"input": input_message, "context": context},
-            config=config
-        )
-
+        response = rag.invoke({"input": input_message, "context": context}, config=config)
     else:
-        response = rag.invoke(
-            {"input": input_message},
-            config=config
-        )
-
+        response = rag.invoke({"input": input_message}, config=config)
 
     return response

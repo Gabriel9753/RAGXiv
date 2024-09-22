@@ -36,6 +36,10 @@ class PageState:
         self.subpage_name = subpage_name
         self.session_id = session_id
         self.messages = []
+        self.memory = None
+        self.runnable = None
+        self.chain = None
+        self.cur_model = None
 
     def get_messages(self):
         return self.messages
@@ -46,19 +50,35 @@ class PageState:
     def clear_messages(self):
         self.messages = []
 
+    def set_rag_components(self, chain, memory, runnable):
+        self.chain = chain
+        self.memory = memory
+        self.runnable = runnable
+
+    def get_rag_components(self):
+        return self.chain, self.memory, self.runnable
+
+    def set_model(self, model):
+        self.cur_model = model
+
+    def get_model(self):
+        return self.cur_model
 
 @st.cache_resource
-def get_rag_components(_chain="stuffing"):
-    print(f"Building RAG components for session with chain {_chain}")
-    rag_llm = load_llm(temp=0.3)
-    rag_retriever = load_vectorstore(QDRANT_URL, QDRANT_API_KEY).as_retriever()
+def get_retreiver():
+    retriever = load_vectorstore(QDRANT_URL, QDRANT_API_KEY).as_retriever()
+    return retriever
+
+def get_rag_components(_chain, _model):
+    rag_llm = load_llm(temp=0.3, _model=_model)
+    rag_retriever = get_retreiver()
     memory = mem.Memory()
 
     chain = None
     if _chain == "stuffing":
         chain = stuff_chain(rag_llm=rag_llm, rag_retriever=rag_retriever)
     elif _chain == "reduction":
-        reduce_llm = load_llm(temp=0.05)
+        reduce_llm = load_llm(temp=0.05, _model=_model)
         chain = reduce_chain(qa_llm=rag_llm, reduce_llm=reduce_llm, rag_retriever=rag_retriever)
     elif _chain == "reranking":
         chain = reranker_chain(rag_llm=rag_llm, rag_retriever=rag_retriever)
@@ -72,7 +92,6 @@ def get_rag_components(_chain="stuffing"):
         chain = paper_qa_chain(rag_llm=rag_llm)
     else:
         raise ValueError(f"Invalid chain type: {_chain}")
-
     runnable = utils.build_runnable(chain, memory)
     return chain, memory, runnable
 

@@ -2,7 +2,7 @@ import streamlit as st
 import sys
 import os
 from collections import defaultdict
-
+from streamlit_utils import get_retreiver
 # --- Streamlit Setup ---
 st.set_page_config(page_title="RAGXiv", page_icon="🤖", layout="centered")
 
@@ -56,5 +56,5 @@ settings_page = st.Page(
 
 pg = st.navigation(pages=[rag_chat_page, semantic_search_page, summarization_page, paper_qa_page, reference_graph_page, settings_page])
 st.sidebar.title("RAGXiv")
+get_retreiver()
 pg.run()
-st.sidebar.markdown(":grey-background[Made with 💚 by [Ilyi](https://github.com/ilyii) and [Gabriel](https://github.com/Gabriel9753)]")

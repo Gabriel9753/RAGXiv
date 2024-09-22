@@ -211,12 +211,9 @@ def semantic_search_chain(rag_llm:Runnable, rag_retriever:VectorStoreRetriever):
     return chain
 
 
-def paper_qa_chain(rag_llm:Runnable):
-    # Not fixed yet
-
-    llm = utils.load_llm(temp=0.3)
+def paper_qa_chain(rag_llm: Runnable):
     prompt = templates.PAPERQA_PROMPT
-    chain = (prompt | llm | StrOutputParser())
+    chain = (prompt | rag_llm | StrOutputParser())
 
     return chain
 

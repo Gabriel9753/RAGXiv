@@ -13,29 +13,34 @@ session_id = hashlib.md5(page_name.encode()).hexdigest()
 # Initialize session state
 if session_id not in st.session_state.page_states:
     st.session_state.page_states[session_id] = PageState(session_id, page_name)
-    get_rag_components.clear()
+    chain, memory, runnable = get_rag_components(_chain=st.session_state.rag_method, _model=st.session_state.llm)
+    st.session_state.page_states[session_id].set_rag_components(chain, memory, runnable)
+    st.session_state.page_states[session_id].set_model(st.session_state.llm)
 if "rag_method" not in st.session_state:
     st.session_state.rag_method = "stuffing"
 
-# Get the RAG components (specific chain), depending on the method chosen
-print(f"SELECTED LLM: {st.session_state.llm}")
+# check if the model is set
+if st.session_state.llm != st.session_state.page_states[session_id].get_model():
+    st.session_state.page_states[session_id].set_model(st.session_state.llm)
+    chain, memory, runnable = get_rag_components(_chain=st.session_state.rag_method, _model=st.session_state.llm)
+    st.session_state.page_states[session_id].set_rag_components(chain, memory, runnable)
 
+chain, memory, runnable = st.session_state.page_states[session_id].get_rag_components()
+
+# Get the RAG components (specific chain), depending on the method chosen
 st.title(":rainbow[RAG Chat]")
 st.markdown("Welcome to the RAG Chat! Ask me anything about the papers in the knowledge base.")
 st.markdown("In the sidebar, you can select the RAG method to use and clear the chat history.")
 st.markdown("---")
 
-chain, memory, runnable = get_rag_components(_chain=st.session_state.rag_method)
-
 with st.sidebar:
     st.markdown("### RAG Methods")
-    # TODO: Add missing chains
     rag_method = st.selectbox("Which method to use?", ("Stuffing", "Reduction", "Reranking", "HyDE")).lower()
     # If the method has changed, clear the chat history and update the RAG components
     if st.session_state.rag_method != rag_method:
         st.session_state.page_states[session_id].clear_messages()
-        get_rag_components.clear()
-        chain, memory, runnable = get_rag_components(_chain=rag_method)
+        chain, memory, runnable = get_rag_components(_chain=rag_method, _model=st.session_state.llm)
+        st.session_state.page_states[session_id].set_rag_components(chain, memory, runnable)
         st.session_state.rag_method = rag_method
 
 # If the user clicks the "Clear chat history" button, clear the chat history
@@ -45,6 +50,8 @@ def clear_chat_history():
 
 if st.sidebar.button("Clear chat history"):
     clear_chat_history()
+
+st.sidebar.markdown(f"`Using model: {st.session_state.page_states[session_id].get_model()}`")
 
 # Display the chat history for the current session
 display_previous_messages(session_id)
@@ -83,6 +90,9 @@ if prompt:
             elif st.session_state.rag_method == "reduction":
                 sources_list = [response.get("context", "")]
             elif st.session_state.rag_method == "reranking":
+                used_papers = get_retreived_papers(response)
+                sources_list = build_used_papers_markdown(used_papers)
+            elif st.session_state.rag_method == "hyde":
                 used_papers = get_retreived_papers(response)
                 sources_list = build_used_papers_markdown(used_papers)
             message_placeholder.markdown(full_response)

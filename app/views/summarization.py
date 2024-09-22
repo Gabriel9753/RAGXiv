@@ -3,12 +3,8 @@ import streamlit as st
 from streamlit_utils import (
     get_rag_components,
     PageState,
-    get_retreived_papers,
-    build_used_papers_markdown,
     display_previous_messages,
-    get_references,
     get_paper_metadata,
-    get_title_similarity_values,
     get_predefined_prompt,
     get_paper_content,
     get_authors
@@ -17,7 +13,6 @@ from utils import chat
 import os
 import hashlib
 import re
-from streamlit_agraph import agraph, Node, Edge, Config
 
 # create an unique session id for this subpage
 cur_file = os.path.basename(__file__)
@@ -26,17 +21,28 @@ session_id = hashlib.md5(page_name.encode()).hexdigest()
 # Initialize session state
 if session_id not in st.session_state.page_states:
     st.session_state.page_states[session_id] = PageState(session_id, page_name)
-    get_rag_components.clear()
+    chain, memory, runnable = get_rag_components(_chain="summarization", _model=st.session_state.llm)
+    st.session_state.page_states[session_id].set_rag_components(chain, memory, runnable)
+    st.session_state.page_states[session_id].set_model(st.session_state.llm)
+
+# check if the model is set
+if st.session_state.llm != st.session_state.page_states[session_id].get_model():
+    st.session_state.page_states[session_id].set_model(st.session_state.llm)
+    chain, memory, runnable = get_rag_components(_chain=st.session_state.rag_method, _model=st.session_state.llm)
+    st.session_state.page_states[session_id].set_rag_components(chain, memory, runnable)
+
+chain, memory, runnable = st.session_state.page_states[session_id].get_rag_components()
 
 st.title(":rainbow[Summarization]")
 st.markdown("Welcome to the Summarization! Enter an arXiv ID or URL to get a summary of the paper.")
 st.markdown("The paper has to be in the knowledge base!")
 st.markdown("---")
-chain, memory, runnable = get_rag_components(_chain="summarization")
 
 # If the user clicks the "Clear chat history" button, clear the chat history
 if st.sidebar.button("Clear chat history"):
     st.session_state.page_states[session_id].clear_messages()
+
+st.sidebar.markdown(f"`Using model: {st.session_state.page_states[session_id].get_model()}`")
 
 # Display the chat history for the current session
 display_previous_messages(session_id)
