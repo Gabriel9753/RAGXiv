@@ -216,7 +216,7 @@ def paper_qa_chain(rag_llm:Runnable):
 
     llm = utils.load_llm(temp=0.3)
     prompt = templates.PAPERQA_PROMPT
-    chain = (prompt | llm)
+    chain = (prompt | llm | StrOutputParser())
 
     return chain
 

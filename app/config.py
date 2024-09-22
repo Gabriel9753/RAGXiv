@@ -10,5 +10,5 @@ EMBEDDING_MODEL_NAME = "all-mpnet-base-v2"
 # ------------------------------
 # OpenAI + LM Studio
 # ------------------------------
-LLM_TYPE = "ollama"
-# LLM_TYPE = "lm-studio"
+# LLM_TYPE = "ollama"
+LLM_TYPE = "lm-studio"

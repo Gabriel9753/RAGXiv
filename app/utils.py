@@ -117,7 +117,6 @@ def chat(rag, input_message, session_id=None, trace_name="chat()", context = Non
 
     if session_id is None:
         config = {"callbacks": [langfuse_handler]}
-        config = {}
     else:
         config = {"configurable": {"session_id": session_id}, "callbacks": [langfuse_handler]}
 
