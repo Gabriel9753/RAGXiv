@@ -137,6 +137,11 @@ def get_paper_metadata(arxiv_id):
     metadata = db_manager.get_metadata_from_arxivid(arxiv_id)
     return metadata
 
+def get_authors(arxiv_id):
+    db_manager = get_db_manager()
+    authors = db_manager.get_authors_from_arxivid(arxiv_id)
+    return authors
+
 
 def scale_similarities(similarities):
     """Scale similarities to range [0, 1]"""

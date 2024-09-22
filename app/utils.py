@@ -5,7 +5,9 @@ from langchain_ollama.llms import OllamaLLM
 from langchain_qdrant import QdrantVectorStore
 from langchain_qdrant import FastEmbedSparse, RetrievalMode
 from langchain_core.runnables import RunnableWithMessageHistory
+from langfuse.callback import CallbackHandler
 
+langfuse_handler = CallbackHandler(session_id="conversation_chain")
 
 def format_docs(d:dict):
     """Formats the documents for prompt generation."""

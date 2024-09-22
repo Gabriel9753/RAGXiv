@@ -1,7 +1,7 @@
 import time
 import streamlit as st
 from streamlit_utils import get_rag_components, PageState, get_retreived_papers, build_used_papers_markdown, display_previous_messages, get_predefined_prompt
-import rag
+from utils import chat
 import os
 import hashlib
 
@@ -29,7 +29,7 @@ display_previous_messages(session_id)
 
 def qa_paper(arxiv_ids, question, message_placeholder):
     full_response = ""
-    response = rag.chat(runnable, question, session_id)
+    response = chat(runnable, question, session_id)
     for chunk in response["answer"].split():
         full_response += chunk + " "
         time.sleep(0.001)
