@@ -111,36 +111,36 @@ if __name__ == "__main__":
 
     # # Summarization
     # # Paper ID -> Summary
-    # sum_chain = chains.summarization_chain(rag_llm=utils.load_llm(temp=0.3))
-
-    # runnable = RunnableWithMessageHistory(
-    #     sum_chain,
-    #     memory.Memory().get_session_history,
-    #     input_messages_key="input",
-    #     history_messages_key="chat_history",
-    #     # output_messages_key="answer",
-    # )
-    # paper="PAPER_ID"
-    # content = "FETCH PAPER CONTENT by RESOLVING `paper` PARAM"
-
-    # response = runnable.invoke({"input": content}, config={"configurable": {"session_id": "SAMPLE_SESSION_ID"}})
-    # print(response)
-
-    # # HyDE
-
-    retriever = utils.load_vectorstore(QDRANT_URL, QDRANT_API_KEY).as_retriever()
-    chain = chains.hyde_chain(rag_llm=utils.load_llm(temp=0.3), rag_retriever=retriever)
+    sum_chain = chains.summarization_chain(rag_llm=utils.load_llm(temp=0.3))
 
     runnable = RunnableWithMessageHistory(
-        chain,
+        sum_chain,
         memory.Memory().get_session_history,
         input_messages_key="input",
         history_messages_key="chat_history",
-        output_messages_key="answer",
+        # output_messages_key="answer",
     )
+    paper="PAPER_ID"
+    content = "FETCH PAPER CONTENT by RESOLVING `paper` PARAM"
 
-    response = runnable.invoke({"input": INPUT}, config={"configurable": {"session_id": "SAMPLE_SESSION_ID"}})
+    response = sum_chain.invoke({"input": content}, config={"configurable": {"session_id": "SAMPLE_SESSION_ID"}})
     print(response)
+
+    # # HyDE
+
+    # retriever = utils.load_vectorstore(QDRANT_URL, QDRANT_API_KEY).as_retriever()
+    # chain = chains.hyde_chain(rag_llm=utils.load_llm(temp=0.3), rag_retriever=retriever)
+
+    # runnable = RunnableWithMessageHistory(
+    #     chain,
+    #     memory.Memory().get_session_history,
+    #     input_messages_key="input",
+    #     history_messages_key="chat_history",
+    #     output_messages_key="answer",
+    # )
+
+    # response = runnable.invoke({"input": INPUT}, config={"configurable": {"session_id": "SAMPLE_SESSION_ID"}})
+    # print(response)
 
 
 

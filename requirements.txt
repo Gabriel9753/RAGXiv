@@ -32,3 +32,17 @@ chainlit
 pypdf
 pypdf2
 langchain-ollama
+
+
+
+# [project.optional-dependencies]
+# langchain-core = ">=0.2.38"
+# langchain-community = "<0.3"
+# langchain = "0.2.16"
+# langchain-openai = "<0.2"
+# langchain-huggingface = "<0.1"
+# bs4 = "^0.0.2"
+# faiss-cpu = "^1.8.0.post1"
+# seaborn = "^0.13.2"
+# ragas = "^0.1.20"
+# langchain-qdrant = "^0.1.4"

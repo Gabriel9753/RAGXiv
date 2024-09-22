@@ -1,21 +1,38 @@
 [tool.poetry]
-name = "summerschool-rag-project"
+name = "RAGXiv"
 version = "0.1.0"
 description = ""
-authors = ["Gabriel9753 <gabriel.elias2000@outlook.de>"]
+authors = [
+            "Gabriel Schurr <scga1011@h-ka.de>",
+            "Ilyesse Hettenbach <heil1012@h-ka.de>"
+        ]
 readme = "README.md"
+repository = "https://github.com/Gabriel9753/summerschool_rag_project"
 
 [tool.poetry.dependencies]
 python = "^3.11"
-pandas = "^2.2.2"
-seaborn = "^0.13.2"
-numpy = "^2.1.1"
-tqdm = "^4.66.5"
-ipykernel = "^6.29.5"
-pyarrow = "^17.0.0"
-plotly = "^5.24.0"
-nbformat = "^5.10.4"
+langchain = "^0.3.0"
+langchain-core = "^0.3.5"
+langchain-openai = "^0.2.0"
+langchain-community = "^0.3.0"
+langchain-huggingface = "^0.1.0"
+langfuse = "^2.50.2"
+langchain-qdrant = "^0.1.4"
+langchain-ollama = "^0.2.0"
+streamlit = "^1.38.0"
+qdrant-client = "^1.11.2"
+psycopg2 = "^2.9.9"
 streamlit-agraph = "^0.0.45"
+
+
+[tool.poetry.group]
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.0"
+black = "^22.1.0"
+flake8 = "^4.0.1"
+
+
 
 
 [build-system]

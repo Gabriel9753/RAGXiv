@@ -1,13 +1,34 @@
-import config
-from langchain_huggingface import HuggingFaceEmbeddings
+import os
+
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_openai import ChatOpenAI
 from langchain_ollama.llms import OllamaLLM
 from langchain_qdrant import QdrantVectorStore
 from langchain_qdrant import FastEmbedSparse, RetrievalMode
 from langchain_core.runnables import RunnableWithMessageHistory
-from langfuse.callback import CallbackHandler
 
-langfuse_handler = CallbackHandler(session_id="conversation_chain")
+from langfuse import Langfuse
+from dotenv import load_dotenv
+
+import config
+
+load_dotenv()
+LANGFUSE_SK = os.getenv("LANGFUSE_SECRET_KEY")
+LANGFUSE_PK = os.getenv("LANGFUSE_PUBLIC_KEY")
+LANGFUSE_HOST = os.getenv("LANGFUSE_HOST")
+
+
+from langfuse.callback import CallbackHandler
+langfuse_handler = CallbackHandler(
+    public_key="pk-lf-511559ed-00fd-481a-8420-790b81c1ec68",
+    secret_key="sk-lf-206a2a34-bbe4-4a4a-a59b-03c3dfede878",
+    host="https://cloud.langfuse.com",
+)
+
+
+
+print("Langfuse available:", langfuse_handler.auth_check())
+
 
 def format_docs(d:dict):
     """Formats the documents for prompt generation."""
@@ -88,16 +109,30 @@ def build_runnable(rag_chain, memory, keys: dict = None):
     )
 
 # @observe(name="chat()", as_type="generation")
-def chat(rag, input_message, session_id, stream=False):
+def chat(rag, input_message, session_id=None, trace_name="chat()", context = None):
     """Chat with the model using the RAG chain."""
-    # langfuse_handler = langfuse_context.get_current_langchain_handler()
+    langfuse_handler.session_id=session_id
+    langfuse_handler.trace_name =trace_name #TODO: set trace name
+    langfuse_handler.user_id = "user"
 
-    response = rag.invoke(
-        {"input": input_message},
-        config={"configurable": {"session_id": session_id}, "callbacks": [langfuse_handler]},
-    )
+    if session_id is None:
+        config = {"callbacks": [langfuse_handler]}
+        config = {}
+    else:
+        config = {"configurable": {"session_id": session_id}, "callbacks": [langfuse_handler]}
 
-    # langfuse_context.update_current_observation(
-    #     input=input_message, output=response["answer"], session_id=session_id
-    # )
+
+    if context:
+        response = rag.invoke(
+            {"input": input_message, "context": context},
+            config=config
+        )
+
+    else:
+        response = rag.invoke(
+            {"input": input_message},
+            config=config
+        )
+
+
     return response

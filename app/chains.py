@@ -3,15 +3,8 @@ from typing import Any
 
 from dotenv import load_dotenv
 from langchain_core.vectorstores import VectorStoreRetriever
-from langchain.chains import create_history_aware_retriever
-from langchain.chains.retrieval import create_retrieval_chain
-from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain.chains.combine_documents.map_rerank import MapRerankDocumentsChain
-from langchain.output_parsers.regex import RegexParser
-from langchain.chains.llm import LLMChain
 from langchain_core.runnables import Runnable, RunnablePassthrough, RunnableBranch,RunnableParallel
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder, PromptTemplate
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain.retrievers.document_compressors import CrossEncoderReranker
 from langchain_community.cross_encoders import HuggingFaceCrossEncoder
@@ -20,7 +13,7 @@ import utils
 import templates
 
 
-def stuff_chain(rag_llm:Runnable, rag_retriever:VectorStoreRetriever):
+def stuff_chain(rag_llm:Runnable, rag_retriever:VectorStoreRetriever, with_guard=False):
     """Build a runnable with message history"""
 
     retrieve_documents = RunnableBranch(
@@ -226,7 +219,6 @@ def paper_qa_chain(rag_llm:Runnable):
     chain = (prompt | llm)
 
     return chain
-
 
 
 def summarization_chain(rag_llm):
