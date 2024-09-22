@@ -124,7 +124,7 @@ class Memory:
         """Clear the memory."""
         self.store = {}
 
-@observe(name="build_runnable()", as_type="generation")
+# @observe(name="build_runnable()", as_type="generation")
 def build_runnable(rag_chain, memory, keys: dict = None):
     """Build a runnable with message history"""
 
@@ -197,11 +197,11 @@ def summarize(llm, paper):
 
 
 if __name__ == "__main__":
-    from langfuse import Langfuse
+    # from langfuse import Langfuse
 
-    langfuse = Langfuse()
+    # langfuse = Langfuse()
 
-    print("Langfuse available: ",langfuse.auth_check())
+    # print("Langfuse available: ",langfuse.auth_check())
     # Initialize components
     chain = build_chain()
     yaml_path = "app/questions.yaml"

@@ -14,11 +14,8 @@ class Memory:
 
     def get_session_history(self, session_id):
         """Retrieve or initialize chat history for a session."""
-        # print("SessionID: ", session_id)
         if session_id not in self.store:
             self.store[session_id] = ChatMessageHistory()
-
-        # print("Session History: ", self.store[session_id], type(self.store[session_id]))
 
         return self.store[session_id]
 
