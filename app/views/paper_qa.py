@@ -1,11 +1,19 @@
 import time
 import streamlit as st
-from streamlit_utils import get_rag_components, PageState, get_retreived_papers, build_used_papers_markdown, display_previous_messages, get_predefined_prompt, get_paper_content, get_paper_metadata
-from utils import chat
+from st_helpers.streamlit_utils import (
+    get_rag_components,
+    PageState,
+    display_previous_messages,
+    get_predefined_prompt,
+    get_paper_content,
+    get_paper_metadata,
+)
+from rag.utils import chat
 import os
 import hashlib
 
 import re
+
 # create an unique session id for this subpage
 cur_file = os.path.basename(__file__)
 page_name = os.path.basename(__file__).split(".")[0]
@@ -41,6 +49,7 @@ st.sidebar.markdown(f"`Using model: {st.session_state.page_states[session_id].ge
 # Display the chat history for the current session
 display_previous_messages(session_id)
 
+
 def qa_paper(question, paper_content, message_placeholder):
     full_response = ""
     response = chat(runnable, question, session_id, trace_name="qa_paper", context=paper_content)
@@ -51,9 +60,11 @@ def qa_paper(question, paper_content, message_placeholder):
     message_placeholder.markdown(full_response)
     return full_response, response
 
+
 def valid_arxiv_id(arxiv_id):
     """Check if the arxiv_id is valid."""
     return bool(re.match(r"\d{4}\.\d{4,5}(v\d+)?", arxiv_id))
+
 
 def valid_arxiv_url(arxiv_url):
     """Check if the arxiv_url is valid."""
@@ -62,12 +73,15 @@ def valid_arxiv_url(arxiv_url):
     url_check = arxiv_url.startswith(abs_url) or arxiv_url.startswith(pdf_url)
     return url_check and valid_arxiv_id(arxiv_url.split("/")[-1])
 
+
 def get_arxiv_id_from_url(arxiv_url):
     """Extract the arxiv_id from the arxiv_url."""
     return arxiv_url.split("/")[-1]
 
+
 def build_url(arxiv_id):
     return f"https://arxiv.org/abs/{arxiv_id}"
+
 
 prompt = st.chat_input("arxiv_id OR arxiv_url @ Your question here")
 # If the user has entered a prompt, chat with the assistant
@@ -80,7 +94,7 @@ if prompt:
         st.stop()
 
     arxiv_id = prompt[:start_index].strip()
-    question = prompt[start_index+1:].strip()
+    question = prompt[start_index + 1 :].strip()
     if not valid_arxiv_id(arxiv_id) and not valid_arxiv_url(arxiv_id):
         st.warning("Please provide a valid arxiv_id or arxiv_url")
         st.stop()

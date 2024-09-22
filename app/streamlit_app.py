@@ -1,8 +1,6 @@
 import streamlit as st
-import sys
-import os
-from collections import defaultdict
-from streamlit_utils import get_retreiver
+from st_helpers.streamlit_utils import get_retreiver
+
 # --- Streamlit Setup ---
 st.set_page_config(page_title="RAGXiv", page_icon="🤖", layout="centered")
 
@@ -15,6 +13,7 @@ if "llm" not in st.session_state:
     st.session_state.llm = "ollama/llama3.1:8b"
 if "rag_method" not in st.session_state:
     st.session_state.rag_method = "stuffing"
+get_retreiver()
 
 # --- PAGE SETUP ---
 rag_chat_page = st.Page(
@@ -54,7 +53,8 @@ settings_page = st.Page(
     icon="⚙️",
 )
 
-pg = st.navigation(pages=[rag_chat_page, semantic_search_page, summarization_page, paper_qa_page, reference_graph_page, settings_page])
+pg = st.navigation(
+    pages=[rag_chat_page, semantic_search_page, summarization_page, paper_qa_page, reference_graph_page, settings_page]
+)
 st.sidebar.title("RAGXiv")
-get_retreiver()
 pg.run()

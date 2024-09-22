@@ -1,5 +1,6 @@
 from langchain_community.chat_message_histories import ChatMessageHistory
 
+
 class Memory:
     def __init__(self):
         self.store = {}

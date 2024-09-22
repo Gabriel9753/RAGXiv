@@ -1,5 +1,4 @@
 import streamlit as st
-from streamlit_utils import get_rag_components
 
 st.title(":rainbow[Settings]")
 st.markdown("Welcome to the Settings page! Here you can change the settings for the app.")

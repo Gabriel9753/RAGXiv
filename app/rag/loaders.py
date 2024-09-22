@@ -32,11 +32,7 @@ class CustomPDFLoader(BaseLoader):
                 base_image = doc.extract_image(xref)
                 image_bytes = base_image["image"]
                 image_ext = base_image["ext"]
-                images.append({
-                    "index": img_index,
-                    "image_bytes": image_bytes,
-                    "image_ext": image_ext
-                })
+                images.append({"index": img_index, "image_bytes": image_bytes, "image_ext": image_ext})
 
             # Extract metadata
             metadata = {
@@ -48,10 +44,7 @@ class CustomPDFLoader(BaseLoader):
 
             # Yield text content and associated metadata as a Document
             if text:
-                yield Document(
-                    page_content=text,
-                    metadata=metadata
-                )
+                yield Document(page_content=text, metadata=metadata)
 
             # Yield each image as a separate Document
             for image in images:
@@ -61,7 +54,7 @@ class CustomPDFLoader(BaseLoader):
                         **metadata,
                         "image_extension": image["image_ext"],
                         "image_data": image["image_bytes"],
-                    }
+                    },
                 )
 
         doc.close()
@@ -85,11 +78,7 @@ class CustomPDFLoader(BaseLoader):
                 base_image = doc.extract_image(xref)
                 image_bytes = base_image["image"]
                 image_ext = base_image["ext"]
-                images.append({
-                    "index": img_index,
-                    "image_bytes": image_bytes,
-                    "image_ext": image_ext
-                })
+                images.append({"index": img_index, "image_bytes": image_bytes, "image_ext": image_ext})
 
             # Extract metadata
             metadata = {
@@ -101,10 +90,7 @@ class CustomPDFLoader(BaseLoader):
 
             # Yield text content and associated metadata as a Document
             if text:
-                yield Document(
-                    page_content=text,
-                    metadata=metadata
-                )
+                yield Document(page_content=text, metadata=metadata)
 
             # Yield each image as a separate Document
             for image in images:
@@ -114,7 +100,7 @@ class CustomPDFLoader(BaseLoader):
                         **metadata,
                         "image_extension": image["image_ext"],
                         "image_data": image["image_bytes"],
-                    }
+                    },
                 )
 
         doc.close()

@@ -7,14 +7,12 @@ from langchain_qdrant import QdrantVectorStore
 from langchain_qdrant import FastEmbedSparse, RetrievalMode
 from langchain_core.runnables import RunnableWithMessageHistory
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langfuse import Langfuse
 from dotenv import load_dotenv
-
-import config
 
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-
+EMBEDDING_MODEL_NAME = "all-mpnet-base-v2"
+COLLECTION_NAME = "arxiv_papers_RecursiveCharacterTextSplitter"
 from langfuse.callback import CallbackHandler
 
 langfuse_handler = CallbackHandler(
@@ -61,7 +59,7 @@ def load_llm(temp: float = 0.3, _model=None):
 
 def load_embedding():
     """Returns the embedding function based on the configuration."""
-    return HuggingFaceEmbeddings(model_name=config.EMBEDDING_MODEL_NAME, model_kwargs={"device": "cpu"})
+    return HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL_NAME, model_kwargs={"device": "cpu"})
 
 
 def load_vectorstore(qdrant_url: str, qdrant_api_key: str, hybrid: bool = False):
@@ -77,7 +75,7 @@ def load_vectorstore(qdrant_url: str, qdrant_api_key: str, hybrid: bool = False)
         sparse_embeddings = FastEmbedSparse(model_name="Qdrant/bm25")
 
         vs = QdrantVectorStore.from_existing_collection(
-            collection_name=config.COLLECTION_NAME,
+            collection_name=COLLECTION_NAME,
             embedding=embedding_function,
             sparse_embedding=sparse_embeddings,
             url=qdrant_url,
@@ -91,7 +89,7 @@ def load_vectorstore(qdrant_url: str, qdrant_api_key: str, hybrid: bool = False)
     else:
 
         vs = QdrantVectorStore.from_existing_collection(
-            collection_name=config.COLLECTION_NAME,
+            collection_name=COLLECTION_NAME,
             embedding=embedding_function,
             url=qdrant_url,
             api_key=qdrant_api_key,

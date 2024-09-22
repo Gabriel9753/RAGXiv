@@ -4,29 +4,27 @@ import sys
 from collections import defaultdict
 from numpy import dot
 from numpy.linalg import norm
-import config
 from dotenv import load_dotenv
 from qdrant_client import QdrantClient, models
 
-root_dir = os.path.join(os.path.dirname(__file__), "..")
+root_dir = os.path.join(os.path.dirname(__file__), "..", "..")
 sys.path.append(root_dir)
 
 from src.scripts.db_manager import DBManager
-import utils
-import memory as mem
-from chains import (
+import rag.memory as mem
+from rag.chains import (
     stuff_chain,
     reduce_chain,
     reranker_chain,
     semantic_search_chain,
     hyde_chain,
     summarization_chain,
-    paper_qa_chain
+    paper_qa_chain,
 )
-from utils import load_vectorstore, load_llm, load_embedding
+from rag.utils import load_vectorstore, load_llm, load_embedding, build_runnable
 
 load_dotenv()
-
+COLLECTION_NAME = "arxiv_papers_RecursiveCharacterTextSplitter"
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
 QDRANT_URL = os.getenv("QDRANT_URL")
 
@@ -64,10 +62,12 @@ class PageState:
     def get_model(self):
         return self.cur_model
 
+
 @st.cache_resource
 def get_retreiver():
     retriever = load_vectorstore(QDRANT_URL, QDRANT_API_KEY).as_retriever()
     return retriever
+
 
 def get_rag_components(_chain, _model):
     rag_llm = load_llm(temp=0.3, _model=_model)
@@ -92,7 +92,7 @@ def get_rag_components(_chain, _model):
         chain = paper_qa_chain(rag_llm=rag_llm)
     else:
         raise ValueError(f"Invalid chain type: {_chain}")
-    runnable = utils.build_runnable(chain, memory)
+    runnable = build_runnable(chain, memory)
     return chain, memory, runnable
 
 
@@ -188,7 +188,7 @@ def get_title_similarity_values(main_title, titles, do_scale=True):
 @st.cache_resource
 def get_qdrant_client():
     client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
-    collection_name = config.COLLECTION_NAME
+    collection_name = COLLECTION_NAME
     return client, collection_name
 
 

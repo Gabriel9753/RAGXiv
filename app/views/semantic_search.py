@@ -1,9 +1,13 @@
 from collections import defaultdict
-import time
 import numpy as np
 import streamlit as st
-from streamlit_utils import get_rag_components, PageState, get_retreived_papers, build_used_papers_markdown, display_previous_messages, get_predefined_prompt, get_similar_papers, get_paper_metadata, get_title_similarity_values
-from utils import chat
+from st_helpers.streamlit_utils import (
+    PageState,
+    display_previous_messages,
+    get_predefined_prompt,
+    get_similar_papers,
+    get_paper_metadata,
+)
 import os
 import hashlib
 
@@ -27,9 +31,11 @@ if st.sidebar.button("Clear chat history"):
 # Display the chat history for the current session
 display_previous_messages(session_id)
 
+
 def get_similar(prompt):
     similar_papers = get_similar_papers(prompt)
     return similar_papers
+
 
 prompt = st.chat_input("Give me some context to find similar papers")
 # If the user has entered a prompt, chat with the assistant
@@ -52,7 +58,12 @@ if prompt:
             used_papers[p[0].metadata["arxiv_id"]].append(p[1])
         used_papers_scores = {p: round(np.mean(sims), 2) for p, sims in used_papers.items()}
         used_papers_titles = {p: get_paper_metadata(p)["title"] for p in used_papers}
-        used_papers = "\n".join([f"- [{used_papers_titles[p]}](https://arxiv.org/abs/{p}) (Similarity: {used_papers_scores[p]})" for p in used_papers])
+        used_papers = "\n".join(
+            [
+                f"- [{used_papers_titles[p]}](https://arxiv.org/abs/{p}) (Similarity: {used_papers_scores[p]})"
+                for p in used_papers
+            ]
+        )
         sim_paper_md = f"Here are some papers that are similar to the context you provided: \n{used_papers}"
 
         message_placeholder.markdown(sim_paper_md)

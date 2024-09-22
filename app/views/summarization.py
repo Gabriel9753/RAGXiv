@@ -1,15 +1,15 @@
 import time
 import streamlit as st
-from streamlit_utils import (
+from st_helpers.streamlit_utils import (
     get_rag_components,
     PageState,
     display_previous_messages,
     get_paper_metadata,
     get_predefined_prompt,
     get_paper_content,
-    get_authors
+    get_authors,
 )
-from utils import chat
+from rag.utils import chat
 import os
 import hashlib
 import re

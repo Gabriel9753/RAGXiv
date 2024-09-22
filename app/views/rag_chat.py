@@ -1,7 +1,14 @@
 import time
 import streamlit as st
-from streamlit_utils import get_rag_components, PageState, get_retreived_papers, build_used_papers_markdown, display_previous_messages, get_predefined_prompt
-from utils import chat
+from st_helpers.streamlit_utils import (
+    get_rag_components,
+    PageState,
+    get_retreived_papers,
+    build_used_papers_markdown,
+    display_previous_messages,
+    get_predefined_prompt,
+)
+from rag.utils import chat
 import os
 import hashlib
 
@@ -43,10 +50,12 @@ with st.sidebar:
         st.session_state.page_states[session_id].set_rag_components(chain, memory, runnable)
         st.session_state.rag_method = rag_method
 
+
 # If the user clicks the "Clear chat history" button, clear the chat history
 def clear_chat_history():
     st.session_state.page_states[session_id].clear_messages()
     memory.clear()
+
 
 if st.sidebar.button("Clear chat history"):
     clear_chat_history()
@@ -55,6 +64,7 @@ st.sidebar.markdown(f"`Using model: {st.session_state.page_states[session_id].ge
 
 # Display the chat history for the current session
 display_previous_messages(session_id)
+
 
 def normal_chat(prompt, message_placeholder):
     full_response = ""
@@ -65,6 +75,7 @@ def normal_chat(prompt, message_placeholder):
         message_placeholder.markdown(full_response + "▌")
     message_placeholder.markdown(full_response)
     return full_response, response
+
 
 prompt = st.chat_input("Ask me anything about the papers in the knowledge base")
 # If the user has entered a prompt, chat with the assistant
@@ -98,7 +109,7 @@ if prompt:
             message_placeholder.markdown(full_response)
 
             # If enabled, display the sources which are expandable
-            if st.session_state.get('show_sources', True):
+            if st.session_state.get("show_sources", True):
                 with st.expander("Sources", expanded=False):
                     for source in sources_list:
                         st.markdown(source)
