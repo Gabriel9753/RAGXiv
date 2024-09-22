@@ -1,9 +1,15 @@
 # RAGXiv
 
+- Load models from ollama
+- Get onedrive data
+- git pull / git clone
+- 
+
 python=3.11
 python -m venv .venv
 .venv\Scripts\activate | source .venv/bin/activate
 pip install poetry
+(poetry lock)
 poetry install
 
 ### Docker

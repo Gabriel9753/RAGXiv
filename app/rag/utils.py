@@ -7,13 +7,14 @@ from langchain_qdrant import QdrantVectorStore
 from langchain_qdrant import FastEmbedSparse, RetrievalMode
 from langchain_core.runnables import RunnableWithMessageHistory
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langfuse.callback import CallbackHandler
+
 from dotenv import load_dotenv
 
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 EMBEDDING_MODEL_NAME = "all-mpnet-base-v2"
 COLLECTION_NAME = "arxiv_papers_RecursiveCharacterTextSplitter"
-from langfuse.callback import CallbackHandler
 
 langfuse_handler = CallbackHandler(
     public_key=os.getenv("LANGFUSE_PUBLIC_KEY"),
@@ -54,7 +55,7 @@ def load_llm(temp: float = 0.3, _model=None):
         except Exception as e:
             raise Exception(f"Error loading the model: {e}")
     else:
-        raise NotImplementedError(f"LLM type {config.LLM_TYPE} is not supported yet.")
+        raise NotImplementedError(f"LLM type {_model} is not supported yet.")
 
 
 def load_embedding():

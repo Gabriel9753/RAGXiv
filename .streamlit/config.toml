@@ -4,4 +4,4 @@ primaryColor="purple"
 font="monospace"
 
 [server]
-runOnSave = true
+runOnSave = false

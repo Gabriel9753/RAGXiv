@@ -54,6 +54,7 @@ class PageState:
         Returns:
             list: A list of message dictionaries.
         """
+        return self.messages
 
     def add_message(self, message):
         """

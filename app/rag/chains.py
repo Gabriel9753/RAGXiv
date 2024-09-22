@@ -90,7 +90,7 @@ def reduce_chain(qa_llm: Runnable, reduce_llm: Runnable, rag_retriever: VectorSt
 
 def reranker(rag_retriever):
     model = HuggingFaceCrossEncoder(model_name="BAAI/bge-reranker-base")
-    compressor = CrossEncoderReranker(model=model, top_n=3)
+    compressor = CrossEncoderReranker(model=model, top_n=5)
     compression_retriever = ContextualCompressionRetriever(base_compressor=compressor, base_retriever=rag_retriever)
     return compression_retriever
 
