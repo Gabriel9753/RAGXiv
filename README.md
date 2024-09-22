@@ -1,28 +1,64 @@
 # RAGXiv
+RAGXiv is a project that integrates data from arXiv with semantic metadata using various tools like Semantic Scholar and Qdrant, along with machine learning models for text analysis. This project handles the full pipeline from downloading arXiv data, processing it, to launching a web application for interactive exploration.
+
+Features
+Load models from Ollama for enhanced text analysis.
+Fetch and process data from OneDrive.
+Git version control for pulling or cloning repositories.
+Docker support for containerization.
+Guardrails integration for ensuring safe and compliant interactions.
 
 - Load models from ollama
 - Get onedrive data
 - git pull / git clone
 - 
 
-python=3.11
+## Installation
+
+### Prerequisites
+- `python=3.11`
+- `poetry`
+- `docker` + `docker-compose`
+- `Ollama` | `lm-studio` | other LLM
+
+
+### Steps
+
+Create a virtual environment:
+```bash
 python -m venv .venv
-.venv\Scripts\activate | source .venv/bin/activate
+```
+
+Activate the virtual environment:
+
+- Windows
+```bash
+.venv\Scripts\activate 
+```
+
+- Linux
+```bash
+source .venv/bin/activate
+```
+
+Install poetry via pip:  
+```bash 
 pip install poetry
-(poetry lock)
+```
+
+Install dependencies specified in `pyproject.toml`:
+```bash
 poetry install
+```
 
-### Docker
-
+#### Docker
+Pull and compose docker
+```bash
 docker-compose up -d
-
-### Guardrails
-
-guardrails hub install hub://guardrails/toxic_language --quiet
-guardrails hub install hub://guardrails/competitor_check --quiet
+```
 
 ### Environment Variables
-
+Create a `.env` file in the root directory with the following variables:
 ```bash
 DATABASE_URL=$DATABASE_URL
 QDRANT_API_KEY=$QDRANT_API_KEY
@@ -33,9 +69,7 @@ LANGFUSE_SK=$LANGFUSE_SK
 LANGFUSE_HOST="https://cloud.langfuse.com"
 ```
 
-Here's a reworked version of the steps in English:
-
-### Steps
+### Data loading and cleaning
 
 1. Download the JSON snapshot from [Kaggle](https://www.kaggle.com/datasets/Cornell-University/arxiv) containing all papers.
 
