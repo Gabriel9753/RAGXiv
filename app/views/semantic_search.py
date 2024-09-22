@@ -1,6 +1,6 @@
 import time
 import streamlit as st
-from streamlit_utils import get_rag_components, PageState, get_retreived_papers, build_used_papers_markdown, display_previous_messages
+from streamlit_utils import get_rag_components, PageState, get_retreived_papers, build_used_papers_markdown, display_previous_messages, get_predefined_prompt
 import rag
 import os
 import hashlib
@@ -16,7 +16,7 @@ if session_id not in st.session_state.page_states:
 
 # Get the RAG components (specific chain), depending on the method chosen
 # TODO: Add missing chains
-chain, memory, runnable = get_rag_components(_chain="similar")
+chain, memory, runnable = get_rag_components()#_chain="similar")
 
 # If the user clicks the "Clear chat history" button, clear the chat history
 if st.sidebar.button("Clear chat history"):
@@ -39,6 +39,7 @@ def get_similar(prompt, message_placeholder):
 prompt = st.chat_input("Give me some context to find similar papers")
 # If the user has entered a prompt, chat with the assistant
 if prompt:
+    prompt = get_predefined_prompt(prompt)
     # Add the user's prompt to the message history and display it
     st.session_state.page_states[session_id].add_message({"role": "user", "content": prompt})
     with st.chat_message("user"):

@@ -151,3 +151,41 @@ def get_title_similarity_values(main_title, titles, do_scale=True):
 
     similarity_values = scale_similarities(similarity_values) if do_scale else similarity_values
     return similarity_values
+
+def get_predefined_prompt(prompt):
+    # some predefined prompts
+    if prompt.lower() == "/p1":
+        prompt = "What is the method 'Stuffing' used for in a RAG-based chatbot?"
+    elif prompt.lower() == "/p2":
+        prompt = "What is the method 'Reduction' used for in a RAG-based chatbot?"
+    elif prompt.lower() == "/p3":
+        prompt = "What is the method 'Reranking' used for in a RAG-based chatbot?"
+    elif prompt.lower() == "/p4":
+        prompt = "What is the method 'HyDE' used for in a RAG-based chatbot?"
+    elif prompt.lower() == "/p5":
+        prompt = "In the context of learning with distribution shift, how does the complexity of the function class G, which represents the nuisance function, affect the performance of the predictor when the shift in the marginal distribution of y is significantly smaller than the shift in the joint distribution of (x, y)?"
+    elif prompt.lower() == "/p6":
+        prompt = "In the context of federated learning, what are the key differences between the proposed method and differentially private federated learning (DPFL) in terms of their mechanisms, certification goals, and technical contributions?"
+    # some predefined arxiv ids
+    elif prompt.lower() == "/a1":
+        prompt = "2312.03511"
+    elif prompt.lower() == "/a2":
+        prompt = "2305.01644"
+    elif prompt.lower() == "/a3":
+        prompt = "2404.16689"
+    elif prompt.lower() == "/a4":
+        # Attention is All You Need
+        prompt = "1706.03762"
+    elif prompt.lower() == "/a5":
+        # DINO
+        prompt = "2104.14294"
+    # some predefined questions to specific paper
+    elif prompt.lower() == "/q1":
+        prompt = "1706.03762 @ How does the use of multiple layers in both the encoder and decoder contribute to the model’s ability to capture complex dependencies in long sequences?"
+    elif prompt.lower() == "/q2":
+        prompt = "1706.03762 @ What is the effect of the number of attention heads in the model on the performance of the model?"
+    elif prompt.lower() == "/q3":
+        prompt = "1706.03762 @ Why are additive attention mechanisms less efficient than dot-product attention, particularly for larger dimensions?"
+    else:
+        prompt = prompt
+    return prompt

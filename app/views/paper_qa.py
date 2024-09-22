@@ -1,6 +1,6 @@
 import time
 import streamlit as st
-from streamlit_utils import get_rag_components, PageState, get_retreived_papers, build_used_papers_markdown, display_previous_messages
+from streamlit_utils import get_rag_components, PageState, get_retreived_papers, build_used_papers_markdown, display_previous_messages, get_predefined_prompt
 import rag
 import os
 import hashlib
@@ -56,6 +56,7 @@ def get_arxiv_id_from_url(arxiv_url):
 prompt = st.chat_input("[arxiv_id, arxiv_url, ...]@ Your question here")
 # If the user has entered a prompt, chat with the assistant
 if prompt:
+    prompt = get_predefined_prompt(prompt)
     # index of first comma
     start_index = prompt.find("@")
     if start_index == -1:

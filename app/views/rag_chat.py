@@ -1,6 +1,6 @@
 import time
 import streamlit as st
-from streamlit_utils import get_rag_components, PageState, get_retreived_papers, build_used_papers_markdown, display_previous_messages
+from streamlit_utils import get_rag_components, PageState, get_retreived_papers, build_used_papers_markdown, display_previous_messages, get_predefined_prompt
 import rag
 import os
 import hashlib
@@ -17,6 +17,13 @@ if "rag_method" not in st.session_state:
     st.session_state.rag_method = "stuffing"
 
 # Get the RAG components (specific chain), depending on the method chosen
+print(f"SELECTED LLM: {st.session_state.llm}")
+
+st.title(":rainbow[RAG Chat]")
+st.markdown("Welcome to the RAG Chat! Ask me anything about the papers in the knowledge base.")
+st.markdown("In the sidebar, you can select the RAG method to use and clear the chat history.")
+st.markdown("---")
+
 chain, memory, runnable = get_rag_components(_chain=st.session_state.rag_method)
 
 with st.sidebar:
@@ -31,9 +38,11 @@ with st.sidebar:
         st.session_state.rag_method = rag_method
 
 # If the user clicks the "Clear chat history" button, clear the chat history
-if st.sidebar.button("Clear chat history"):
+def clear_chat_history():
     st.session_state.page_states[session_id].clear_messages()
     memory.clear()
+if st.sidebar.button("Clear chat history"):
+    clear_chat_history()
 
 # Display the chat history for the current session
 display_previous_messages(session_id)
@@ -51,30 +60,34 @@ def normal_chat(prompt, message_placeholder):
 prompt = st.chat_input("Ask me anything about the papers in the knowledge base")
 # If the user has entered a prompt, chat with the assistant
 if prompt:
-    # Add the user's prompt to the message history and display it
-    st.session_state.page_states[session_id].add_message({"role": "user", "content": prompt})
-    with st.chat_message("user"):
-        st.markdown(prompt)
+    if prompt.lower() == "/clear":
+        clear_chat_history()
+    else:
+        prompt = get_predefined_prompt(prompt)
+        # Add the user's prompt to the message history and display it
+        st.session_state.page_states[session_id].add_message({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.markdown(prompt)
 
-    # Display the assistant's response
-    with st.chat_message("assistant"):
-        message_placeholder = st.empty()
-        # First just get response
-        full_response, response = normal_chat(prompt, message_placeholder)
-        # In response the used papers are stored, get them and build markdown
-        if st.session_state.rag_method == "stuffing":
-            used_papers = get_retreived_papers(response)
-            sources_list = build_used_papers_markdown(used_papers)
-        elif st.session_state.rag_method == "reduction":
-            sources_list = [response.get("context", "")]
-        message_placeholder.markdown(full_response)
+        # Display the assistant's response
+        with st.chat_message("assistant"):
+            message_placeholder = st.empty()
+            # First just get response
+            full_response, response = normal_chat(prompt, message_placeholder)
+            # In response the used papers are stored, get them and build markdown
+            if st.session_state.rag_method == "stuffing":
+                used_papers = get_retreived_papers(response)
+                sources_list = build_used_papers_markdown(used_papers)
+            elif st.session_state.rag_method == "reduction":
+                sources_list = [response.get("context", "")]
+            message_placeholder.markdown(full_response)
 
-        # If enabled, display the sources which are expandable
-        if st.session_state.get('show_sources', True):
-            with st.expander("Sources", expanded=False):
-                for source in sources_list:
-                    st.markdown(source)
+            # If enabled, display the sources which are expandable
+            if st.session_state.get('show_sources', True):
+                with st.expander("Sources", expanded=False):
+                    for source in sources_list:
+                        st.markdown(source)
 
-        # Add the response and sources to the message history
-        message = {"role": "assistant", "content": full_response, "sources": sources_list}
-        st.session_state.page_states[session_id].add_message(message)
+            # Add the response and sources to the message history
+            message = {"role": "assistant", "content": full_response, "sources": sources_list}
+            st.session_state.page_states[session_id].add_message(message)

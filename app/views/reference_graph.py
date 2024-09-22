@@ -9,6 +9,7 @@ from streamlit_utils import (
     get_references,
     get_paper_metadata,
     get_title_similarity_values,
+    get_predefined_prompt,
 )
 import rag
 import os
@@ -76,21 +77,22 @@ def build_graph(main_paper_title, arxiv_id, similarities):
 
 prompt = st.chat_input("arxiv_id or arxiv_url")
 if prompt:
+    prompt = get_predefined_prompt(prompt)
     arxiv_id = get_arxiv_id_from_url(prompt) if valid_arxiv_url(prompt) else prompt
     if not valid_arxiv_id(arxiv_id):
         st.error("Invalid arXiv ID or URL. Please enter a valid arXiv ID or URL.")
         st.stop()
 
-    references = get_references(arxiv_id)
-    main_paper_title = get_paper_metadata(arxiv_id).get("title", arxiv_id)
-    other_titles = [ref["title"] for ref in references]
-    similarities = get_title_similarity_values(main_paper_title, other_titles)
-    similarities = {title: similarity for title, similarity in similarities.items() if similarity > 0.5}
-
     # Add the user's prompt to the message history and display it
     st.session_state.page_states[session_id].add_message({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
+
+    references = get_references(arxiv_id)
+    main_paper_title = get_paper_metadata(arxiv_id).get("title", arxiv_id)
+    other_titles = [ref["title"] for ref in references]
+    similarities = get_title_similarity_values(main_paper_title, other_titles)
+    similarities = {title: similarity for title, similarity in similarities.items() if similarity > 0.3}
 
     # Display the graph
     with st.chat_message("assistant"):

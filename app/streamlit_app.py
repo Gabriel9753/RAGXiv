@@ -4,28 +4,36 @@ import os
 from collections import defaultdict
 
 # --- Streamlit Setup ---
+st.set_page_config(page_title="RAGXiv", page_icon="🤖", layout="centered")
+
 if "page_states" not in st.session_state:
     print("Setting session ID")
     st.session_state.page_states = {}
+if "show_sources" not in st.session_state:
+    st.session_state.show_sources = True
+if "llm" not in st.session_state:
+    st.session_state.llm = "ollama/llama3.1:8b"
+if "rag_method" not in st.session_state:
+    st.session_state.rag_method = "stuffing"
 
 # --- PAGE SETUP ---
 rag_chat_page = st.Page(
     "views/rag_chat.py",
     title="RAG Chat",
-    icon=":material/chat:",
+    icon="💬",
     default=True,
 )
 
 semantic_search_page = st.Page(
     "views/semantic_search.py",
     title="Semantic Search",
-    icon=":material/search:",
+    icon="🔍",
 )
 
 paper_qa_page = st.Page(
     "views/paper_qa.py",
     title="Paper QA",
-    icon=":material/question_mark:",
+    icon="❓",
 )
 
 reference_graph_page = st.Page(
@@ -37,27 +45,10 @@ reference_graph_page = st.Page(
 settings_page = st.Page(
     "views/settings.py",
     title="Settings",
-    icon=":material/settings:",
+    icon="⚙️",
 )
 
-st.sidebar.title("RAGXiv")
-
-# --- NAVIGATION SETUP [WITHOUT SECTIONS] ---
 pg = st.navigation(pages=[rag_chat_page, semantic_search_page, paper_qa_page, reference_graph_page, settings_page])
-
-# --- NAVIGATION SETUP [WITH SECTIONS]---
-# pg = st.navigation(
-#     {
-#         "RAG": [rag_chat],
-#         "Projects": [rag_chat],
-#     }
-# )
-
-
-# --- SHARED ON ALL PAGES ---
-
-# --- RUN NAVIGATION ---
+st.sidebar.title("RAGXiv")
 pg.run()
-
-
 st.sidebar.markdown(":grey-background[Made with 💚 by [Ilyi](https://github.com/ilyii) and [Gabriel](https://github.com/Gabriel9753)]")
