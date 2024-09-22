@@ -36,6 +36,12 @@ paper_qa_page = st.Page(
     icon="❓",
 )
 
+summarization_page = st.Page(
+    "views/summarization.py",
+    title="Paper Summarization",
+    icon="📝",
+)
+
 reference_graph_page = st.Page(
     "views/reference_graph.py",
     title="Reference Graph",
@@ -48,7 +54,7 @@ settings_page = st.Page(
     icon="⚙️",
 )
 
-pg = st.navigation(pages=[rag_chat_page, semantic_search_page, paper_qa_page, reference_graph_page, settings_page])
+pg = st.navigation(pages=[rag_chat_page, semantic_search_page, paper_qa_page, summarization_page, reference_graph_page, settings_page])
 st.sidebar.title("RAGXiv")
 pg.run()
 st.sidebar.markdown(":grey-background[Made with 💚 by [Ilyi](https://github.com/ilyii) and [Gabriel](https://github.com/Gabriel9753)]")

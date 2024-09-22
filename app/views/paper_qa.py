@@ -5,6 +5,7 @@ import rag
 import os
 import hashlib
 
+import re
 # create an unique session id for this subpage
 cur_file = os.path.basename(__file__)
 page_name = os.path.basename(__file__).split(".")[0]
@@ -16,7 +17,7 @@ if session_id not in st.session_state.page_states:
 
 # Get the RAG components (specific chain), depending on the method chosen
 # TODO: Chain for qa
-chain, memory, runnable = get_rag_components(_chain="stuffing")
+chain, memory, runnable = get_rag_components(_chain="paper_qa")
 
 # If the user clicks the "Clear chat history" button, clear the chat history
 if st.sidebar.button("Clear chat history"):
@@ -26,7 +27,7 @@ if st.sidebar.button("Clear chat history"):
 # Display the chat history for the current session
 display_previous_messages(session_id)
 
-def ask_chat(arxiv_ids, question, message_placeholder):
+def qa_paper(arxiv_ids, question, message_placeholder):
     full_response = ""
     response = rag.chat(runnable, question, session_id)
     for chunk in response["answer"].split():
@@ -35,8 +36,6 @@ def ask_chat(arxiv_ids, question, message_placeholder):
         message_placeholder.markdown(full_response + "▌")
     message_placeholder.markdown(full_response)
     return full_response, response
-
-import re
 
 def valid_arxiv_id(arxiv_id):
     """Check if the arxiv_id is valid."""
@@ -75,9 +74,6 @@ if prompt:
             arxiv_ids = [arxiv_id.strip() for arxiv_id in provided_ids.split(",")]
         arxiv_ids = [arxiv_id for arxiv_id in arxiv_ids if valid_arxiv_id(arxiv_id) or valid_arxiv_url(arxiv_id)]
         arxiv_ids = [get_arxiv_id_from_url(arxiv_id) if valid_arxiv_url(arxiv_id) else arxiv_id for arxiv_id in arxiv_ids]
-    print(f"Arxiv IDs: {arxiv_ids}")
-    print(f"Question: {question}")
-
     # Add the user's prompt to the message history and display it
     st.session_state.page_states[session_id].add_message({"role": "user", "content": prompt})
     with st.chat_message("user"):
@@ -87,7 +83,7 @@ if prompt:
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
         # First just get response
-        full_response, response = ask_chat(arxiv_ids, question, message_placeholder)
+        full_response, response = qa_paper(arxiv_ids, question, message_placeholder)
         sources_list = ["MISSING"]
         # # In response the used papers are stored, get them and build markdown
         # if st.session_state.rag_method == "stuffing":

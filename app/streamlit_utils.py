@@ -6,14 +6,24 @@ import sys
 from collections import defaultdict
 from numpy import dot
 from numpy.linalg import norm
+import config
 from dotenv import load_dotenv
+from qdrant_client import QdrantClient, models
 
 root_dir = os.path.join(os.path.dirname(__file__), "..")
 sys.path.append(root_dir)
 
 from src.scripts.db_manager import DBManager
 import rag
-from chains import stuff_chain, reduce_chain, reranker_chain, semantic_search
+from chains import (
+    stuff_chain,
+    reduce_chain,
+    reranker_chain,
+    semantic_search,
+    hyde_chain,
+    summarization_chain,
+    paper_qa_chain,
+)
 from utils import load_vectorstore, load_llm, load_embedding
 
 load_dotenv()
@@ -52,9 +62,17 @@ def get_rag_components(_chain="stuffing"):
         reduce_llm = load_llm(temp=0.05)
         chain = reduce_chain(qa_llm=rag_llm, reduce_llm=reduce_llm, rag_retriever=rag_retriever)
     elif _chain == "reranking":
-        chain = reranker_chain(rag_llm=rag_llm)
+        chain = reranker_chain(rag_llm=rag_llm, rag_retriever=rag_retriever)
     elif _chain == "hyde":
+        chain = hyde_chain(rag_llm=rag_llm, rag_retriever=rag_retriever)
+    elif _chain == "semantic_search":
+        # TODO: Implement semantic search chain
         pass
+        # chain = semantic_search(rag_llm=rag_llm, rag_retriever=rag_retriever)
+    elif _chain == "summarization":
+        chain = summarization_chain(rag_llm=rag_llm)
+    elif _chain == "paper_qa":
+        chain = paper_qa_chain(rag_llm=rag_llm)
     else:
         raise ValueError(f"Invalid chain type: {_chain}")
 
@@ -134,7 +152,6 @@ def scale_similarities(similarities):
     return {k: (v - min_sim) / (max_sim - min_sim) for k, v in similarities.items()}
 
 
-
 def cosine_similarity(a, b):
     return dot(a, b) / (norm(a) * norm(b))
 
@@ -151,6 +168,27 @@ def get_title_similarity_values(main_title, titles, do_scale=True):
 
     similarity_values = scale_similarities(similarity_values) if do_scale else similarity_values
     return similarity_values
+
+
+@st.cache_resource
+def get_qdrant_client():
+    client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
+    collection_name = config.COLLECTION_NAME
+    return client, collection_name
+
+
+def get_paper_content(arxiv_id):
+    client, collection_name = get_qdrant_client()
+    results = client.scroll(
+        collection_name,
+        scroll_filter=models.Filter(
+            must=[models.FieldCondition(key="metadata.arxiv_id", match=models.MatchValue(value=arxiv_id))],
+        ),
+        limit=99,
+    )[0]
+    content = " ".join([doc.payload["page_content"] for doc in results])
+    return content
+
 
 def get_predefined_prompt(prompt):
     # some predefined prompts

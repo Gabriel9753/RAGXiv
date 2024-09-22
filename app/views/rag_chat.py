@@ -41,6 +41,7 @@ with st.sidebar:
 def clear_chat_history():
     st.session_state.page_states[session_id].clear_messages()
     memory.clear()
+
 if st.sidebar.button("Clear chat history"):
     clear_chat_history()
 
@@ -80,6 +81,9 @@ if prompt:
                 sources_list = build_used_papers_markdown(used_papers)
             elif st.session_state.rag_method == "reduction":
                 sources_list = [response.get("context", "")]
+            elif st.session_state.rag_method == "reranking":
+                used_papers = get_retreived_papers(response)
+                sources_list = build_used_papers_markdown(used_papers)
             message_placeholder.markdown(full_response)
 
             # If enabled, display the sources which are expandable
