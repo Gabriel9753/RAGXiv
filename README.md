@@ -1,18 +1,6 @@
 # RAGXiv
 RAGXiv is a project that integrates data from arXiv with semantic metadata using various tools like Semantic Scholar and Qdrant, along with machine learning models for text analysis. This project handles the full pipeline from downloading arXiv data, processing it, to launching a web application for interactive exploration.
 
-Features
-Load models from Ollama for enhanced text analysis.
-Fetch and process data from OneDrive.
-Git version control for pulling or cloning repositories.
-Docker support for containerization.
-Guardrails integration for ensuring safe and compliant interactions.
-
-- Load models from ollama
-- Get onedrive data
-- git pull / git clone
-- 
-
 ## Installation
 
 ### Prerequisites
