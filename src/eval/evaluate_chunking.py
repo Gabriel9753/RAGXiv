@@ -20,20 +20,52 @@ import utils
 import chains
 
 
-def load_env_vars():
+def load_env_vars() -> tuple:
+    """
+    Load environment variables from a .env file.
+
+    This function loads environment variables using the `load_dotenv` function
+    and retrieves the values of `QDRANT_API_KEY` and `QDRANT_URL` from the
+    environment.
+
+    Returns:
+        tuple: A tuple containing the `QDRANT_API_KEY` and `QDRANT_URL` values
+               retrieved from the environment variables.
+    """
     """Load environment variables from a .env file."""
+
     load_dotenv()
     qdrant_api_key = os.getenv("QDRANT_API_KEY")
     qdrant_url = os.getenv("QDRANT_URL")
     return qdrant_api_key, qdrant_url
 
 
-def load_data(dataset_path):
+def load_data(dataset_path: str) -> Dataset:
+    """
+    Load a dataset from disk.
+
+    Args:
+        dataset_path (str): The path to the dataset on disk.
+
+    Returns:
+        Dataset: The loaded dataset.
+    """
     """Load a dataset from disk."""
     return load_from_disk(dataset_path)
 
 
-def get_chain(chain_type, llm, retriever):
+def get_chain(chain_type: str, llm: object, retriever: object) -> object:
+    """
+    Get the chain based on the type.
+    Parameters:
+    chain_type (str): The type of chain to retrieve. Valid options are "stuff", "reduce", "rerank", and "hyde".
+    llm: The language model to be used in the chain.
+    retriever: The retriever to be used in the chain.
+    Returns:
+    chain: The chain object corresponding to the specified chain_type.
+    Raises:
+    ValueError: If an invalid chain_type is provided.
+    """
     """Get the chain based on the type."""
     if chain_type == "stuff":
         chain = chains.stuff_chain(rag_llm=llm, rag_retriever=retriever)
@@ -49,7 +81,16 @@ def get_chain(chain_type, llm, retriever):
     return chain
 
 
-def build_dataset(dataset, chain, retriever):
+def build_dataset(dataset: dict, chain: object, retriever: object) -> Dataset:
+    """
+    Perform retrieval-augmented generation (RAG) and evaluate the answers.
+    Args:
+        dataset (dict): A dictionary containing the dataset with keys "questions" and "ground_truth".
+        chain (object): An object representing the language model chain used for generating answers.
+        retriever (object): An object used to retrieve relevant documents based on the questions.
+    Returns:
+        Dataset: A dataset object containing the questions, generated answers, contexts, and ground truth answers.
+    """
     """Perform retrieval-augmented generation (RAG) and evaluate the answers."""
 
     questions = dataset["questions"]
@@ -75,18 +116,32 @@ def build_dataset(dataset, chain, retriever):
     return data
 
 
-def evaluation(dataset, llm):
+def evaluation(dataset: Dataset) -> pd.DataFrame:
+    """
+    Evaluate the dataset using RAGAS metrics.
+    Parameters:
+    dataset (Dataset): The dataset to be evaluated.
+    Returns:
+    pandas.DataFrame: The evaluation results as a pandas DataFrame.
+    """
     """Evaluate the dataset using RAGAS metrics."""
     result = ragas.evaluate(
         dataset=dataset,
         metrics=[context_precision, context_recall, faithfulness, answer_relevancy],
-        llm=llm,
     )
 
     return result.to_pandas()
 
 
-def main(dataset_path, chain_type):
+def main(dataset_path: str, chain_type: str) -> None:
+    """
+    Main function to handle loading data, processing, and evaluation.
+    Args:
+        dataset_path (str): The path to the dataset to be evaluated.
+        chain_type (str): The type of chain to be used for processing.
+    Returns:
+        None
+    """
     """Main function to handle loading data, processing, and evaluation."""
 
     # Initialize
@@ -103,7 +158,7 @@ def main(dataset_path, chain_type):
     data = build_dataset(ds, chain, retriever)
 
     # Evaluate
-    evaluation_results = evaluation(data, llm)
+    evaluation_results = evaluation(data)
 
     # Show results
     print(evaluation_results)
@@ -116,8 +171,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--chain_type", type=str, default="stuff", required=True, help="Type of chain to use (e.g., stuff)"
     )
-    parser.add_argument("--chunking_method", type=str, required=False, default=None, help="Chunking method (optional)")
+    # parser.add_argument("--chunking_method", type=str, required=False, default=None, help="Chunking method (optional)")
 
     args = parser.parse_args()
 
-    main(args.dataset, args.chain_type, args.chunking_method)
+    main(args.dataset, args.chain_type)

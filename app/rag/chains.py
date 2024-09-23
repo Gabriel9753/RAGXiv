@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# coding: utf-8
 
 from langchain_core.vectorstores import VectorStoreRetriever
 from langchain_core.runnables import Runnable, RunnablePassthrough, RunnableBranch, RunnableParallel
@@ -10,8 +12,20 @@ import rag.utils as utils
 import rag.templates as templates
 
 
-def stuff_chain(rag_llm: Runnable, rag_retriever: VectorStoreRetriever, with_guard=False):
+def stuff_chain(rag_llm: Runnable, rag_retriever: VectorStoreRetriever, with_guard: bool = False) -> Runnable:
+    """
+    Builds a retrieval-augmented generation (RAG) chain with optional message history.
+    Args:
+        rag_llm (Runnable): The language model to be used in the chain.
+        rag_retriever (VectorStoreRetriever): The retriever to fetch relevant documents.
+        with_guard (bool, optional): Flag to enable or disable guard functionality. Defaults to False.
+    Returns:
+        Runnable: A runnable chain that combines history-aware retrieval and question-answering.
+    """
     """Build a runnable with message history"""
+
+    if with_guard:
+        raise NotImplementedError("Guard functionality is not yet implemented.")
 
     retrieve_documents = RunnableBranch(
         (
@@ -37,7 +51,7 @@ def stuff_chain(rag_llm: Runnable, rag_retriever: VectorStoreRetriever, with_gua
     return retrieval_chain
 
 
-def reduce_chain(qa_llm: Runnable, reduce_llm: Runnable, rag_retriever: VectorStoreRetriever):
+def reduce_chain(qa_llm: Runnable, reduce_llm: Runnable, rag_retriever: VectorStoreRetriever) -> Runnable:
     """Build Reduce chain.
 
     Args:
@@ -88,15 +102,33 @@ def reduce_chain(qa_llm: Runnable, reduce_llm: Runnable, rag_retriever: VectorSt
     return retrieval_chain
 
 
-def reranker(rag_retriever):
+def reranker(rag_retriever: VectorStoreRetriever) -> ContextualCompressionRetriever:
+    """
+    Enhances a given retriever with a reranking mechanism using a HuggingFace CrossEncoder model.
+
+    Args:
+        rag_retriever (VectorStoreRetriever): The base retriever to be enhanced with reranking capabilities.
+
+    Returns:
+        ContextualCompressionRetriever: A retriever that incorporates reranking and compression.
+    """
     model = HuggingFaceCrossEncoder(model_name="BAAI/bge-reranker-base")
     compressor = CrossEncoderReranker(model=model, top_n=5)
     compression_retriever = ContextualCompressionRetriever(base_compressor=compressor, base_retriever=rag_retriever)
     return compression_retriever
 
 
-def reranker_chain(rag_llm, rag_retriever):
-
+def reranker_chain(rag_llm: Runnable, rag_retriever: VectorStoreRetriever) -> Runnable:
+    """
+    Creates a retrieval-augmented generation (RAG) chain that combines a history-aware retriever
+    and a question-answer chain.
+    Args:
+        rag_llm (Runnable): The language model chain to be used for generating responses.
+        rag_retriever (VectorStoreRetriever): The retriever to be used for fetching relevant documents.
+    Returns:
+        Runnable: A combined chain that first retrieves relevant documents based on the input and
+                  then generates a response using the language model.
+    """
     reranking_retriever = reranker(rag_retriever)
     retrieve_documents = RunnableBranch(
         (
@@ -122,7 +154,7 @@ def reranker_chain(rag_llm, rag_retriever):
     return retrieval_chain
 
 
-def hyde_chain(rag_llm: Runnable, rag_retriever: VectorStoreRetriever):
+def hyde_chain(rag_llm: Runnable, rag_retriever: VectorStoreRetriever) -> Runnable:
     """Build Hypothetical Document Embedding chain.
 
     Args:
@@ -150,11 +182,10 @@ def hyde_chain(rag_llm: Runnable, rag_retriever: VectorStoreRetriever):
     return retrieval_chain
 
 
-def semantic_search_chain(rag_llm: Runnable, rag_retriever: VectorStoreRetriever):
+def semantic_search_chain(rag_llm: Runnable, rag_retriever: VectorStoreRetriever) -> Runnable:
     """Build Semantic Search chain.
 
     Args:
-        query (str): The query for the semantic search.
         rag_llm (Runnable): The LLM for RAG.
         rag_retriever (VectorStoreRetriever): The retriever for RAG.
 
@@ -173,14 +204,34 @@ def semantic_search_chain(rag_llm: Runnable, rag_retriever: VectorStoreRetriever
     return chain
 
 
-def paper_qa_chain(rag_llm: Runnable):
+def paper_qa_chain(rag_llm: Runnable) -> Runnable:
+    """
+    Creates a question-answering chain for processing research papers.
+    This function constructs a chain by combining a predefined prompt template
+    with a language model runnable and a string output parser. The resulting
+    chain can be used to generate answers to questions based on research papers.
+    Args:
+        rag_llm (Runnable): A runnable language model that processes the input
+                            and generates responses.
+    Returns:
+        Chain: A chain object that processes input questions and generates
+               answers based on the research paper content.
+    """
     prompt = templates.PAPERQA_PROMPT
     chain = prompt | rag_llm | StrOutputParser()
 
     return chain
 
 
-def summarization_chain(rag_llm):
+def summarization_chain(rag_llm: Runnable) -> Runnable:
+    """
+    Creates a summarization chain using a provided language model.
+    Args:
+        rag_llm: A language model instance used for generating summaries.
+    Returns:
+        A chain object that processes input through a summarization prompt and the provided language model,
+        and then parses the output as a string.
+    """
     prompt = templates.SUMMARIZATION_PROMPT
     chain = prompt | rag_llm | StrOutputParser()
 

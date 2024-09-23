@@ -2,6 +2,12 @@ from langchain_community.chat_message_histories import ChatMessageHistory
 
 
 class Memory:
+    """
+    Memory class for managing session data.
+    Attributes:
+        store (dict): A dictionary to store session data.
+
+    """
     def __init__(self):
         self.store = {}
 

@@ -22,11 +22,16 @@ langfuse_handler = CallbackHandler(
     host=os.getenv("LANGFUSE_HOST"),
 )
 
-# print("Langfuse available:", langfuse_handler.auth_check())
 
+def format_docs(d: dict) -> str:
+    """Formats the documents for prompt generation.
 
-def format_docs(d: dict):
-    """Formats the documents for prompt generation."""
+    Args:
+        d (dict): The document dictionary.
+
+    Returns:
+        str: The formatted documents.
+    """
     if isinstance(d, list):
         res = "\n\n".join([doc.page_content for doc in d])
 
@@ -36,7 +41,25 @@ def format_docs(d: dict):
 
 
 def load_llm(temp: float = 0.3, _model=None):
-    """Initialize and return the LLM based on the configured type."""
+    """
+    Initialize and return the LLM (Large Language Model) based on the configured type.
+
+    Parameters:
+    temp (float): The temperature setting for the LLM, which controls the randomness of the output. Default is 0.3.
+    _model (str): The identifier for the model to be loaded. Supported models include:
+        - "lm-studio": Uses ChatOpenAI with a local API endpoint.
+        - "ollama/qwen2.5:7b": Uses OllamaLLM with the "qwen2.5:7b" model.
+        - "ollama/llama3.1:8b": Uses OllamaLLM with the "llama3.1:8b" model.
+        - "gemini-1.5-flash": Uses ChatGoogleGenerativeAI with the "gemini-1.5-flash" model, requires GEMINI_API_KEY.
+
+    Returns:
+    An instance of the specified LLM.
+
+    Raises:
+    NotImplementedError: If the specified model type is not supported.
+    Exception: If there is an error loading the "gemini-1.5-flash" model.
+    """
+
     if "lm-studio" in _model:
         return ChatOpenAI(openai_api_base="http://localhost:5000/v1", openai_api_key="lm-studio", temperature=temp)
     elif "ollama/qwen2.5:7b" == _model:
@@ -58,23 +81,37 @@ def load_llm(temp: float = 0.3, _model=None):
         raise NotImplementedError(f"LLM type {_model} is not supported yet.")
 
 
-def load_embedding():
-    """Returns the embedding function based on the configuration."""
-    return HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL_NAME, model_kwargs={"device": "cpu"})
+def load_embedding(device: str = "cpu") -> HuggingFaceEmbeddings:
+    """Returns the embedding function based on the configuration.
 
+    Args:
+        device (str): The device to use for the embeddings. Default is "cpu".
 
-def load_vectorstore(qdrant_url: str, qdrant_api_key: str, hybrid: bool = False):
-    """
-    Initialize the retriever using the HuggingFace embeddings and Qdrant vectorstore.
     Returns:
-        Retriever: A retriever for retrieving relevant documents.
+        HuggingFaceEmbeddings: The HuggingFace embeddings
+    """
+    return HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL_NAME, model_kwargs={"device": device})
+
+
+def load_vectorstore(qdrant_url: str, qdrant_api_key: str, hybrid: bool = False) -> QdrantVectorStore:
+    """
+    Load a Qdrant vector store from an existing collection.
+    Args:
+        qdrant_url (str): The URL of the Qdrant instance.
+        qdrant_api_key (str): The API key for accessing the Qdrant instance.
+        hybrid (bool, optional): Whether to use hybrid retrieval mode with sparse embeddings. Defaults to False.
+    Returns:
+        QdrantVectorStore: An instance of QdrantVectorStore loaded from the existing collection.
+    Raises:
+        QdrantVectorStoreError: If the existing Qdrant collection does not contain the required sparse vectors
+                                when hybrid mode is enabled.
     """
     embedding_function = load_embedding()
 
     if hybrid:
+        raise NotImplementedError("Hybrid mode is not supported yet.")
 
         sparse_embeddings = FastEmbedSparse(model_name="Qdrant/bm25")
-
         vs = QdrantVectorStore.from_existing_collection(
             collection_name=COLLECTION_NAME,
             embedding=embedding_function,
@@ -83,9 +120,6 @@ def load_vectorstore(qdrant_url: str, qdrant_api_key: str, hybrid: bool = False)
             api_key=qdrant_api_key,
             retrieval_mode=RetrievalMode.HYBRID,
         )
-        """
-        langchain_qdrant.qdrant.QdrantVectorStoreError: Existing Qdrant collection arxiv_papers_RecursiveCharacterTextSplitter does not contain sparse vectors named None. If you want to recreate the collection, set `force_recreate` parameter to `True`.
-        """
 
     else:
 
@@ -99,8 +133,17 @@ def load_vectorstore(qdrant_url: str, qdrant_api_key: str, hybrid: bool = False)
     return vs
 
 
-def build_runnable(rag_chain, memory, keys: dict = None):
-    """Build a runnable with message history"""
+def build_runnable(rag_chain: object, memory: object, keys: dict = None) -> RunnableWithMessageHistory:
+    """Build a runnable with message history
+
+    Args:
+        rag_chain (object): The RAG chain object.
+        memory (object): The memory object that provides session history.
+        keys (dict, optional): A dictionary specifying the keys for input, history, and output messages. Defaults to None.
+
+    Returns:
+        RunnableWithMessageHistory: An instance of RunnableWithMessageHistory configured with the provided parameters.
+    """
 
     if keys is None:
         keys = {"input_messages_key": "input", "history_messages_key": "chat_history", "output_messages_key": "answer"}
@@ -113,10 +156,18 @@ def build_runnable(rag_chain, memory, keys: dict = None):
         output_messages_key=keys["output_messages_key"],
     )
 
-
-def chat(rag, input_message, session_id=None, trace_name="chat()", context=None):
-    """Chat with the model using the RAG chain."""
-    print(rag)
+def chat(rag: object, input_message: str, session_id: str = None, trace_name: str = "chat()", context: dict = None) -> dict:
+    """
+    Chat with the model using the RAG chain.
+    Args:
+        rag (object): The RAG (Retrieval-Augmented Generation) model instance.
+        input_message (str): The input message to send to the model.
+        session_id (str, optional): The session ID for the chat. Defaults to None.
+        trace_name (str, optional): The trace name for logging purposes. Defaults to "chat()".
+        context (dict, optional): Additional context to provide to the model. Defaults to None.
+    Returns:
+        dict: The response from the model.
+    """
     langfuse_handler.session_id = session_id
     langfuse_handler.trace_name = trace_name
     langfuse_handler.user_id = "user"

@@ -1,5 +1,9 @@
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
+# -----------------------------------------------------
+#                      Templates
+# -----------------------------------------------------
+
 # Reformulate user questions in the context of previous conversations
 CONTEXTUALIZE_TEMPLATE = """
     Given the ongoing conversation and the most recent user question, reformulate the question
@@ -24,6 +28,24 @@ PAPERQA_TEMPLATE = """
     Paper Content: {context}
 """
 
+# Academic paper summarization prompt
+SUMMARIZATION_TEMPLATE = """
+    Summarize the following academic paper from arXiv, highlighting the key points and contributions.
+    Include an overview of the problem addressed, methods used, main findings, and conclusions.
+    The summary should be clear, concise, and free of excessive technical jargon.
+
+    Paper Content: {input}
+"""
+
+# Hypothetical document creation for question answering
+HYDE_TEMPLATE = """
+    Based on the conversation history and the latest question, generate a hypothetical document
+    that would represent an ideal response to the user's query, using the chat history for context.
+"""
+
+# -----------------------------------------------------
+#                       Prompts
+# -----------------------------------------------------
 # Reformulate a user question based on chat history
 CONTEXTUALIZE_PROMPT = ChatPromptTemplate.from_messages(
     [
@@ -80,25 +102,14 @@ PAPERQA_PROMPT = ChatPromptTemplate.from_messages(
     ]
 )
 
+
 # Academic paper summarization prompt
-SUMMARIZATION_TEMPLATE = """
-    Summarize the following academic paper from arXiv, highlighting the key points and contributions.
-    Include an overview of the problem addressed, methods used, main findings, and conclusions.
-    The summary should be clear, concise, and free of excessive technical jargon.
-
-    Paper Content: {input}
-"""
-
 SUMMARIZATION_PROMPT = ChatPromptTemplate.from_messages(
     [("system", SUMMARIZATION_TEMPLATE), ("human", "{input}")]
 )
 
-# Hypothetical document creation for question answering
-HYDE_TEMPLATE = """
-    Based on the conversation history and the latest question, generate a hypothetical document
-    that would represent an ideal response to the user's query, using the chat history for context.
-"""
 
+# Hypothetical document creation for question answering
 HYDE_PROMPT = ChatPromptTemplate.from_messages(
     [
         ("system", HYDE_TEMPLATE),
