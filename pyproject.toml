@@ -1,17 +1,19 @@
 [tool.poetry]
 name = "RAGXiv"
 version = "0.1.0"
-description = ""
+description = "A project focused on semantic paper retrieval using LangChain and Qdrant"
 authors = [
-            "Gabriel Schurr <scga1011@h-ka.de>",
-            "Ilyesse Hettenbach <heil1012@h-ka.de>"
-        ]
+    "Gabriel Schurr <scga1011@h-ka.de>",
+    "Ilyesse Hettenbach <heil1012@h-ka.de>"
+]
 readme = "README.md"
 repository = "https://github.com/Gabriel9753/summerschool_rag_project"
 package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.11"
+
+# Core dependencies for the project
 langchain = "^0.3.0"
 langchain-core = "^0.3.5"
 langchain-openai = "^0.2.0"
@@ -27,8 +29,10 @@ streamlit-agraph = "^0.0.45"
 langchain-google-genai = "^2.0.0"
 langchain-experimental = "^0.3.0"
 
+# Dependency groups
 
-[tool.poetry.dev-dependencies]
+# Dependencies for development and testing
+[tool.poetry.group.dev.dependencies]
 pytest = "^7.0"
 black = "^22.1.0"
 flake8 = "^4.0.1"
@@ -40,7 +44,18 @@ pyfonts = "^0.0.1"
 nltk = "^3.9.1"
 wordcloud = "^1.9.3"
 
-
+# Dependencies for evaluation mode
+[tool.poetry.group.eval.dependencies]
+langchain-core = ">=0.2.38"
+langchain-community = "<0.3"
+langchain = "0.2.16"
+langchain-openai = "<0.2"
+langchain-huggingface = "<0.1"
+bs4 = "^0.0.2"
+faiss-cpu = "^1.8.0.post1"
+seaborn = "^0.13.2"
+ragas = "^0.1.20"
+langchain-qdrant = "^0.1.4"
 
 [build-system]
 requires = ["poetry-core"]
